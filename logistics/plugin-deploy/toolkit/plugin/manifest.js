@@ -1,0 +1,165 @@
+const path = require('node:path');
+const fse = require('fs-extra');
+
+function processManifestScripts(manifest, callback) {
+  const types = ['desktop', 'mobile', 'config'];
+
+  return types.reduce((entries, type) => {
+    const jsFiles = manifest[type]?.js || [];
+    for (const file of jsFiles) {
+      if (/^https?:\/\//.test(file)) continue;
+      const name = path.basename(file, path.extname(file));
+      callback(entries, file, name);
+    }
+    return entries;
+  }, {});
+}
+
+function resolveManifestSourceDir(manifestPath) {
+  const resolvedPath = path.resolve(process.cwd(), manifestPath);
+  const manifestDir = path.dirname(resolvedPath);
+  if (!manifestDir || manifestDir === '.' || manifestDir === path.sep) {
+    return '';
+  }
+  return path.basename(manifestDir);
+}
+
+function generateWebpackEntries(manifest, manifestPath) {
+  const srcDir = resolveManifestSourceDir(manifestPath);
+  return processManifestScripts(manifest, (acc, file, name) => {
+    const segments = srcDir ? [srcDir, file] : [file];
+    acc[name] = `./${segments.join('/')}`;
+  });
+}
+
+function getBundledScripts(manifest, assetsByChunkName, distPath) {
+  return processManifestScripts(manifest, (acc, file, name) => {
+    const assets = assetsByChunkName?.[name];
+    if (!assets?.length) {
+      acc[file] = file;
+      return;
+    }
+    const assetPath = path.join(distPath, assets[0]);
+    acc[file] = Buffer.from(fse.readFileSync(assetPath));
+  });
+}
+
+function transformScriptUrls(manifest, baseUrl) {
+  const types = ['desktop', 'mobile', 'config'];
+  for (const type of types) {
+    const jsFiles = manifest[type]?.js || [];
+    if (jsFiles.length === 0) continue;
+    manifest[type].js = jsFiles.map((file) => {
+      if (/^https?:\/\//.test(file)) return file;
+      const name = path.basename(file, path.extname(file));
+      return `${baseUrl}/${name}.js`;
+    });
+  }
+  return manifest;
+}
+
+function transformScriptUrlsVite(manifest, baseUrl, manifestDirRelativeToProjectRoot) {
+  const types = ['desktop', 'mobile', 'config'];
+  for (const type of types) {
+    const jsFiles = manifest[type]?.js || [];
+    if (jsFiles.length === 0) continue;
+    manifest[type].js = jsFiles.map((file) => {
+      if (/^https?:\/\//.test(file)) return file;
+      const relative = [manifestDirRelativeToProjectRoot, file].filter(Boolean).join('/');
+      return `${baseUrl}/${relative}`;
+    });
+  }
+  return manifest;
+}
+
+function getViteBundledScripts(
+  manifest,
+  viteManifest,
+  outDirAbsolutePath,
+  manifestDirRelativeToProjectRoot,
+) {
+  return processManifestScripts(manifest, (acc, file) => {
+    const sourcePath = [manifestDirRelativeToProjectRoot, file].filter(Boolean).join('/');
+    const entry = viteManifest?.[sourcePath];
+    if (!entry?.file) {
+      acc[file] = file;
+      return;
+    }
+    const builtFile = path.join(outDirAbsolutePath, entry.file);
+    acc[file] = Buffer.from(fse.readFileSync(builtFile));
+  });
+}
+
+async function addDevBadge(iconPath) {
+  let sharp;
+  try {
+    // 延迟加载，避免在非开发模式下强制安装可选依赖
+    sharp = require('sharp');
+  } catch (error) {
+    throw new Error(`sharp 模块未安装或不可用，无法生成开发徽章: ${error?.message || error}`);
+  }
+
+  const image = sharp(iconPath);
+  const metadata = await image.metadata();
+  const size = metadata.width;
+
+  // 为大尺寸图片提供更合适的角标比例
+  let badgeRatio = 0.25; // 默认为25%
+  if (size > 512) {
+    // 对于大图片，随着尺寸增大，角标比例适当增加
+    badgeRatio = 0.25 + Math.min(0.15, (size - 512) / 10000);
+  }
+
+  const badgeSize = Math.max(size * badgeRatio, 24);
+  const padding = badgeSize * 0.15;
+  const svg = `
+<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+  <defs>
+    <linearGradient id="badge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B6B" />
+      <stop offset="100%" stop-color="#DC3545" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(${size - badgeSize - padding}, ${size - badgeSize - padding}) scale(${badgeSize / 250})">
+    <g>
+      <circle fill="#FFFFFF" cx="124.8" cy="125" r="115.9"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" fill="url(#badge)" d="M124.8,250C55.8,250,0,194.2,0,125.2C0,55.8,55.8,0,124.8,0
+        c69,0,124.8,55.8,124.8,125.2C249.6,194.2,193.8,250,124.8,250 M124.8,18.6c-58.6,0-106.2,47.6-106.2,106.6
+        c0,58.5,47.7,106.2,106.2,106.2c58.5,0,106.2-47.7,106.2-106.2C231,66.2,183.3,18.6,124.8,18.6z"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" fill="url(#badge)" d="M179.4,124.7c0-54.9-48.4-55.7-70.8-55.7h-34v116.7h32.9
+        C143.2,185.7,179.4,175.7,179.4,124.7 M152.8,126.3c0,30.6-17.2,39.2-39.7,39.2h-12.6V89.3h11.8C128.1,89.3,152.8,93.6,152.8,126.3
+        z"/>
+    </g>
+  </g>
+</svg>`;
+
+  // 先将 SVG 转换为 PNG buffer
+  // 确保徽章尺寸不超过原圖尺寸
+  const badgeBuffer = await sharp(Buffer.from(svg))
+    .resize(size, size, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
+
+  // 合成圖片時強制匹配尺寸
+  return image
+    .resize(size, size)
+    .composite([
+      {
+        input: badgeBuffer,
+        blend: 'over',
+      },
+    ])
+    .toBuffer();
+}
+
+module.exports = {
+  generateWebpackEntries,
+  getBundledScripts,
+  getViteBundledScripts,
+  transformScriptUrls,
+  transformScriptUrlsVite,
+  addDevBadge,
+};

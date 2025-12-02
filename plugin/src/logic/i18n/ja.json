@@ -1,0 +1,16 @@
+{
+  "desktop_pluginRunning": "プラグイン実行中",
+  "desktop_savedMessage": "保存されたメッセージ：",
+  "desktop_noMessage": "（メッセージ未設定）",
+  "desktop_greeting": "Aquanuraテンプレートへようこそ！",
+  "desktop_alertTitle": "サンプルプラグイン",
+  "desktop_alertMessage": "これはサンプルのKintoneプラグインです！\n\nカスタマイズするにはplugin/src/logic/desktop/desktop.jsを編集してください。",
+  "config_title": "🔌 プラグイン設定",
+  "config_description": "以下でプラグインの設定を行ってください。変更はアプリ更新後に反映されます。",
+  "config_messageLabel": "表示メッセージ",
+  "config_messagePlaceholder": "カスタムメッセージを入力...",
+  "config_messageHelper": "このメッセージはレコード詳細ページに表示されます。",
+  "config_saveButton": "💾 設定を保存",
+  "config_cancelButton": "✖️ キャンセル",
+  "config_saveSuccess": "設定を保存しました！\n\n変更を適用するにはアプリを更新してください。"
+}

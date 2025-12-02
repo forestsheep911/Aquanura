@@ -1,0 +1,16 @@
+{
+  "desktop_pluginRunning": "插件运行中",
+  "desktop_savedMessage": "您保存的信息是：",
+  "desktop_noMessage": "（未设置信息）",
+  "desktop_greeting": "欢迎使用Aquanura模板！",
+  "desktop_alertTitle": "示例插件",
+  "desktop_alertMessage": "这是一个Kintone示例插件！\n\n请编辑 plugin/src/logic/desktop/desktop.js 进行自定义。",
+  "config_title": "🔌 插件配置",
+  "config_description": "在下方配置插件设置。更改将在更新应用后生效。",
+  "config_messageLabel": "显示消息",
+  "config_messagePlaceholder": "输入自定义消息...",
+  "config_messageHelper": "此消息将显示在记录详情页面。",
+  "config_saveButton": "💾 保存配置",
+  "config_cancelButton": "✖️ 取消",
+  "config_saveSuccess": "配置保存成功！\n\n请更新应用以应用更改。"
+}

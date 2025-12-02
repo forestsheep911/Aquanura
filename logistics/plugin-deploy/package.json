@@ -1,0 +1,27 @@
+{
+  "name": "kintone-plugin-deploy",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node vite/build.js",
+    "dev": "node vite/dev.js",
+    "fix-cert": "node fix-cert.js",
+    "upload-dev": "node upload-dev.js",
+    "upload-prod": "node upload-prod.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@kintone/rest-api-client": "^5.7.5",
+    "@vitejs/plugin-react": "^4.3.1",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.5.0",
+    "esbuild": "^0.21.5",
+    "fs-extra": "^11.2.0",
+    "fflate": "^0.8.2",
+    "node-forge": "^1.3.1",
+    "sharp": "^0.33.5",
+    "vite": "^5.4.10",
+    "ws": "^8.18.3"
+  }
+}
