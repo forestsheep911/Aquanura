@@ -1,0 +1,16 @@
+/**
+ * Desktop View Styles
+ * Simple text display without any decoration
+ */
+
+.plugin-template-container {
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.plugin-template-message {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+}

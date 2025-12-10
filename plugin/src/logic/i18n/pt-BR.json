@@ -1,0 +1,16 @@
+{
+  "desktop_pluginRunning": "Plugin em execução",
+  "desktop_savedMessage": "Sua mensagem salva: ",
+  "desktop_noMessage": "(Nenhuma mensagem definida)",
+  "desktop_greeting": "Olá do Aquanura Template!",
+  "desktop_alertTitle": "Plugin de exemplo",
+  "desktop_alertMessage": "Este é um plugin de exemplo do Kintone!\n\nEdite plugin/src/logic/desktop/desktop.js para personalizar.",
+  "config_title": "Configuração do plugin",
+  "config_description": "Defina as configurações do plugin abaixo. As alterações terão efeito após atualizar o app.",
+  "config_messageLabel": "Mensagem exibida",
+  "config_messagePlaceholder": "Insira uma mensagem personalizada...",
+  "config_messageHelper": "Esta mensagem será exibida na página de detalhes do registro.",
+  "config_saveButton": "Salvar configurações",
+  "config_cancelButton": "Cancelar",
+  "config_saveSuccess": "Configurações salvas com sucesso!\n\nAtualize o app para aplicar as alterações."
+}

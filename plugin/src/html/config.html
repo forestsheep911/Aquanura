@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plugin Configuration</title>
+  <link rel="stylesheet" href="../css/config.css">
+</head>
+<body>
+  <div class="config-container">
+    <div class="config-header">
+      <h1 class="config-title" data-i18n="config_title">🔌 Plugin Configuration</h1>
+      <p class="config-description" data-i18n="config_description">
+        Configure your plugin settings below. Changes will take effect after updating the app.
+      </p>
+    </div>
+
+    <form>
+      <div class="form-group">
+        <label class="form-label" for="message" data-i18n="config_messageLabel">Display Message</label>
+        <input 
+          type="text" 
+          id="message" 
+          class="form-input" 
+          data-i18n-placeholder="config_messagePlaceholder"
+          placeholder="Enter a custom message..."
+          maxlength="100"
+        >
+        <p class="form-helper" data-i18n="config_messageHelper">
+          This message will be displayed on the record detail page.
+        </p>
+      </div>
+
+    </form>
+
+    <div class="config-actions">
+      <button type="button" id="submit" class="btn btn-primary">
+        <span data-i18n="config_saveButton">💾 Save Configuration</span>
+      </button>
+      <button type="button" id="cancel" class="btn btn-secondary">
+        <span data-i18n="config_cancelButton">✖️ Cancel</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../logic/config/config.js"></script>
+</body>
+</html>

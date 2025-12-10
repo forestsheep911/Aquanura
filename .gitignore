@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+dist/
+build/
+*.zip
+
+# Misc
+.DS_Store
+*.log
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Private keys
+*.ppk
+private.ppk
+
+# Logs
+logistics/log/*.log
+logistics/log/*.jsonl
+
+# Build outputs
+plugin/dist/
+plugin/devdist/
+
+# Certificates
+.plugin-craft-kit/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+/quotes
+
+# OS
+Thumbs.db
