@@ -570,11 +570,17 @@ Environment:
   const shouldIgnoreFile = (file) => {
     const relPath = relRepo(file);
     if (!relPath) return true;
+    const fileName = path.basename(file);
     return (
       relPath.startsWith(tempOutRel) ||
       relPath.includes('node_modules') ||
       relPath.includes('.git') ||
-      relPath.endsWith('.log')
+      relPath.endsWith('.log') ||
+      // 过滤 Vite 内部临时配置文件（如 vite.config.js.timestamp-xxx.mjs）
+      fileName.includes('.timestamp-') ||
+      // 过滤其他常见的临时文件
+      fileName.endsWith('.tmp') ||
+      fileName.startsWith('~')
     );
   };
 
