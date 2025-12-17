@@ -25,8 +25,9 @@ This command:
 1. Sets `NODE_ENV=production` and `DEV_MODE=false`
 2. Builds with Vite (optimized, minified)
 3. Removes development code (logger, debug statements)
-4. Signs the plugin with your `private.ppk`
-5. Creates `plugin/dist/plugin.zip`
+4. Validates `plugin/src/manifest.json` (default: `MANIFEST_VALIDATE=strict`)
+5. Signs the plugin with your `private.ppk`
+6. Creates `plugin/dist/plugin.zip`
 
 Output: `plugin/dist/plugin.zip` (ready for upload)
 

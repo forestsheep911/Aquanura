@@ -20,6 +20,15 @@
     "pt-BR": "Modelo de plugin moderno preparado para IA",
     "th": "แม่แบบปลั๊กอินสมัยใหม่ที่เป็นมิตรกับ AI"
   },
+  "homepage_url": {
+    "en": "https://github.com/forestsheep911/Aquanura",
+    "ja": "https://github.com/forestsheep911/Aquanura",
+    "zh": "https://github.com/forestsheep911/Aquanura",
+    "zh-TW": "https://github.com/forestsheep911/Aquanura",
+    "es": "https://github.com/forestsheep911/Aquanura",
+    "th": "https://github.com/forestsheep911/Aquanura",
+    "pt-BR": "https://github.com/forestsheep911/Aquanura"
+  },
   "icon": "image/icon.png",
   "desktop": {
     "js": ["dev/live-reload.js", "log/logger.js", "logic/desktop/desktop.js"],

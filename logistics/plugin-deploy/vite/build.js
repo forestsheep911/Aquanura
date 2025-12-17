@@ -2,10 +2,13 @@
 const path = require('node:path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
-const { build } = require('vite');
-const react = require('@vitejs/plugin-react');
 const { transformSync } = require('esbuild');
 const { buildPlugin, buildDevPlugin } = require('../toolkit/plugin');
+const {
+  getManifestValidateMode,
+  validateManifest,
+  formatValidationResult,
+} = require('../toolkit/plugin/manifest-validate');
 const { loadEnv } = require('../toolkit/runtime/env');
 const {
   resolveEnvFilePath,
@@ -16,10 +19,17 @@ const {
   resolvePluginZipPath,
 } = require('../toolkit/runtime/paths');
 
-const reactPlugin = react({
-  jsxRuntime: 'classic',
-  include: [/\.(jsx|tsx|js)$/],
-});
+async function createReactPlugin() {
+  const mod = await import('@vitejs/plugin-react');
+  const react = mod?.default;
+  if (typeof react !== 'function') {
+    throw new TypeError('Invalid @vitejs/plugin-react export: expected a default function.');
+  }
+  return react({
+    jsxRuntime: 'classic',
+    include: [/\.(jsx|tsx|js)$/],
+  });
+}
 
 const forceJsxPlugin = {
   name: 'force-jsx-loader',
@@ -38,11 +48,39 @@ const forceJsxPlugin = {
 
 (async () => {
   loadEnv({ path: resolveEnvFilePath('.env') });
+  // Use ESM import to avoid Vite's deprecated CJS Node API warning.
+  const { build } = await import('vite');
+  const reactPlugin = await createReactPlugin();
 
   const repoRoot = findRepoRoot();
   const pluginRoot = resolvePluginRoot({ repoRoot });
   const manifestPath = resolvePluginManifestPath({ repoRoot, pluginRoot });
   const manifest = await fs.readJSON(manifestPath);
+  const manifestValidateMode = getManifestValidateMode();
+  if (manifestValidateMode !== 'off') {
+    const pluginDir = path.dirname(manifestPath);
+    const validation = validateManifest({ manifest, pluginDir });
+    const { warnings, errors } = formatValidationResult(validation);
+
+    if (warnings.length > 0) {
+      console.warn(chalk.yellow(`[vite-build] Manifest validation warnings (${warnings.length}):`));
+      for (const warning of warnings) {
+        console.warn(chalk.yellow(`- ${warning}`));
+      }
+    }
+
+    if (!validation.valid) {
+      console.error(chalk.red(`[vite-build] Manifest validation failed: ${manifestPath}`));
+      console.error(chalk.red('Invalid manifest.json:'));
+      for (const error of errors) {
+        console.error(chalk.red(`- ${error}`));
+      }
+      if (manifestValidateMode === 'strict') {
+        console.error(chalk.gray('Fix the manifest and re-run `pnpm build`.'));
+        process.exit(1);
+      }
+    }
+  }
 
   const outDir = resolvePluginDistDir({ repoRoot, pluginRoot });
   const logLevel = process.env.VITE_LOG_LEVEL || 'info';

@@ -3,10 +3,14 @@
 const path = require('node:path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
-const react = require('@vitejs/plugin-react');
 const { transformSync } = require('esbuild');
 const { certificateFor } = require('../toolkit/cert');
 const { uploadPlugin } = require('../toolkit/kintone');
+const {
+  getManifestValidateMode,
+  validateManifest,
+  formatValidationResult,
+} = require('../toolkit/plugin/manifest-validate');
 const { loadEnv } = require('../toolkit/runtime/env');
 const {
   findRepoRoot,
@@ -71,10 +75,17 @@ function devError(message, error) {
   console.error(`[vite-dev] ${fullMessage}`);
 }
 
-const reactPlugin = react({
-  jsxRuntime: 'classic',
-  include: [/\.(jsx|tsx|js)$/],
-});
+async function createReactPlugin() {
+  const mod = await import('@vitejs/plugin-react');
+  const react = mod?.default;
+  if (typeof react !== 'function') {
+    throw new TypeError('Invalid @vitejs/plugin-react export: expected a default function.');
+  }
+  return react({
+    jsxRuntime: 'classic',
+    include: [/\.(jsx|tsx|js)$/],
+  });
+}
 
 async function maybeUpload({
   pluginZipPath,
@@ -316,7 +327,9 @@ Environment:
     };
   }
 
-  ({ createServer, build: viteBuild } = require('vite'));
+  // Use ESM import to avoid Vite's deprecated CJS Node API warning.
+  ({ createServer, build: viteBuild } = await import('vite'));
+  const reactPlugin = await createReactPlugin();
 
   const logLevel = process.env.VITE_LOG_LEVEL || (QUIET ? 'silent' : 'error');
   const resolveLogDir = () => {
@@ -386,8 +399,53 @@ Environment:
   const httpsConfig = certificateFor(extraDomains);
   const preferPort = Number(process.env.VITE_PORT || 5173);
 
-  const manifest = await fs.readJSON(manifestPath);
-  const manifestVersion = String(manifest.version ?? '');
+  const manifestValidateMode = getManifestValidateMode();
+  const pluginDir = path.dirname(manifestPath);
+
+  let manifest = await fs.readJSON(manifestPath);
+  let manifestVersion = String(manifest.version ?? '');
+
+  const printManifestValidation = (validation, { prefix, strictHint } = {}) => {
+    const { warnings, errors } = formatValidationResult(validation);
+
+    if (warnings.length > 0) {
+      console.warn(
+        chalk.yellow(`${prefix} Manifest validation warnings (${warnings.length}):`),
+      );
+      for (const warning of warnings) {
+        console.warn(chalk.yellow(`- ${warning}`));
+      }
+    }
+
+    if (!validation.valid) {
+      console.error(chalk.red(`${prefix} Manifest validation failed: ${manifestPath}`));
+      console.error(chalk.red('Invalid manifest.json:'));
+      for (const error of errors) {
+        console.error(chalk.red(`- ${error}`));
+      }
+      if (strictHint) {
+        console.error(chalk.gray(strictHint));
+      }
+    }
+  };
+
+  const validateCurrentManifest = ({ prefix, strictHint } = {}) => {
+    if (manifestValidateMode === 'off') {
+      return { valid: true, warnings: [], errors: [] };
+    }
+    const validation = validateManifest({ manifest, pluginDir });
+    printManifestValidation(validation, { prefix, strictHint });
+    return validation;
+  };
+
+  // Fail fast before starting the dev server / generating the dev plugin.
+  const initialValidation = validateCurrentManifest({
+    prefix: '[vite-dev]',
+    strictHint: 'Fix the manifest and re-run `pnpm dev`.',
+  });
+  if (!initialValidation.valid && manifestValidateMode === 'strict') {
+    process.exit(1);
+  }
 
   const server = await createServer({
     root: pluginRoot,
@@ -485,22 +543,76 @@ Environment:
   const tempOut = path.join(pluginDistDir, '.dev-build');
   await fs.emptyDir(tempOut);
 
-  const seenEntryRel = new Set();
-  const entryInfos = [];
-  const entryRelToInfo = new Map();
-  for (const type of ['desktop', 'mobile', 'config']) {
-    const jsFiles = manifest[type]?.js || [];
-    for (const rel of jsFiles.filter((r) => !/^https?:\/\//.test(r))) {
-      const normalizedRel = rel.replace(/\\/g, '/');
-      if (seenEntryRel.has(normalizedRel)) continue;
-      seenEntryRel.add(normalizedRel);
-      const absPath = path.resolve(pluginRoot, 'src', normalizedRel);
-      const info = { type, rel: normalizedRel, absPath };
-      entryInfos.push(info);
-      entryRelToInfo.set(normalizedRel, info);
+  let entryInfos = [];
+  let entryRelToInfo = new Map();
+  let allEntryRelSet = new Set();
+  const computeEntriesFromManifest = () => {
+    const seenEntryRel = new Set();
+    const infos = [];
+    const relToInfo = new Map();
+
+    for (const type of ['desktop', 'mobile', 'config']) {
+      const jsFiles = manifest[type]?.js || [];
+      for (const rel of jsFiles.filter((r) => !/^https?:\/\//.test(r))) {
+        const normalizedRel = rel.replace(/\\/g, '/');
+        if (seenEntryRel.has(normalizedRel)) continue;
+        seenEntryRel.add(normalizedRel);
+        const absPath = path.resolve(pluginRoot, 'src', normalizedRel);
+        const info = { type, rel: normalizedRel, absPath };
+        infos.push(info);
+        relToInfo.set(normalizedRel, info);
+      }
+    }
+
+    entryInfos = infos;
+    entryRelToInfo = relToInfo;
+    allEntryRelSet = new Set(infos.map((info) => info.rel));
+  };
+  computeEntriesFromManifest();
+  if (entryInfos.length === 0) {
+    console.error(
+      chalk.red(`[vite-dev] No JavaScript entries defined in manifest.json: ${manifestPath}`),
+    );
+    if (manifestValidateMode === 'strict') {
+      process.exit(1);
     }
   }
-  const allEntryRelSet = new Set(entryInfos.map((info) => info.rel));
+
+  const devPluginZipPath = path.join(pluginDistDir, 'plugin-dev.zip');
+  let devPluginBaseUrl = null;
+  const devPluginAutoUploadEnabled = process.env.DEV_UPLOAD === 'true';
+
+  const rebuildDevPluginPackage = async () => {
+    if (!devPluginBaseUrl) {
+      return { ok: false, skipped: true, reason: 'Dev server base URL is not ready yet.' };
+    }
+
+    const { buildDevPlugin } = require('../toolkit/plugin');
+    const { zip, id } = await buildDevPlugin({
+      dirname: path.dirname(manifestPath),
+      manifest,
+      ppk: path.join(pluginRoot, 'private.ppk'),
+      baseUrl: devPluginBaseUrl,
+      devTools: {
+        icon: { type: 'dev-badge' },
+      },
+      viteMode: false,
+    });
+
+    devPluginId = id;
+    await fs.outputFile(devPluginZipPath, zip);
+
+    if (devPluginAutoUploadEnabled) {
+      await maybeUpload({
+        pluginZipPath: devPluginZipPath,
+        pluginId: id,
+        zipBuffer: zip,
+        pluginRoot,
+      });
+    }
+
+    return { ok: true, id };
+  };
 
   const quietOnWarn = (warning, warn) => {
     if (
@@ -562,6 +674,7 @@ Environment:
   let rebuildTimer = null;
   let rebuilding = false;
   let pendingChanges = false;
+  let pendingManifestChange = false;
   let quietDeadline = null;
   let lastLazyNoticeAt = 0;
   const relRepo = (p) => path.relative(repoRoot, p).replace(/\\/g, '/');
@@ -593,6 +706,8 @@ Environment:
   const runRebuildIfNeeded = async () => {
     rebuildTimer = null;
     if (!pendingChanges) return;
+    const shouldReloadManifest = pendingManifestChange;
+    pendingManifestChange = false;
     if (isLazyMode && quietDeadline) {
       const remaining = quietDeadline - Date.now();
       if (remaining > 0) {
@@ -609,12 +724,38 @@ Environment:
     const previousDeadline = quietDeadline;
     quietDeadline = null;
     try {
+      if (shouldReloadManifest) {
+        manifest = await fs.readJSON(manifestPath);
+        manifestVersion = String(manifest.version ?? '');
+        computeEntriesFromManifest();
+
+        const validation = validateCurrentManifest({ prefix: '[vite-dev]' });
+        if (!validation.valid) {
+          devError(
+            'Manifest validation failed; rebuild skipped (serving last successful build).',
+          );
+          return;
+        }
+      }
+
       await buildEntries();
+
+      if (shouldReloadManifest) {
+        const result = await rebuildDevPluginPackage();
+        if (!result?.ok) {
+          devError(
+            `Manifest changed but dev plugin could not be rebuilt (${result?.reason || 'unknown'}).`,
+          );
+          return;
+        }
+        devLog(`Manifest changed; dev plugin rebuilt (pluginId: ${result.id}).`);
+      }
+
       lastChange = Date.now();
-      devLog('✅ 重建完成，通知客户端刷新');
+      devLog('Rebuild completed; notifying live clients.');
       notifyLiveClients();
     } catch (error) {
-      devError('❌ 重建失败', error);
+      devError('Rebuild failed', error);
     } finally {
       rebuilding = false;
       if (pendingChanges) {
@@ -631,6 +772,9 @@ Environment:
 
   const scheduleRebuild = ({ reason = '', force = false } = {}) => {
     pendingChanges = true;
+    if (reason === 'src/manifest.json') {
+      pendingManifestChange = true;
+    }
     if (force) {
       quietDeadline = null;
       planRebuildCheck(0);
@@ -869,38 +1013,17 @@ Environment:
   }
 
   // 构建开发专用插件包（连接到 Vite 服务器）
-  const baseUrl = `https://127.0.0.1:${actualPort}/__static/js`;
+  devPluginBaseUrl = `https://127.0.0.1:${actualPort}/__static/js`;
   devLog('正在构建开发插件包...');
-
-  const { buildDevPlugin } = require('../toolkit/plugin');
-  const { zip, id } = await buildDevPlugin({
-    dirname: path.dirname(manifestPath),
-    manifest,
-    ppk: path.join(pluginRoot, 'private.ppk'),
-    baseUrl,
-    devTools: {
-      icon: { type: 'dev-badge' },
-    },
-    viteMode: false,
-  });
-  devPluginId = id;
-
-  // 保存开发插件包
-  const devPluginZip = path.join(pluginDistDir, 'plugin-dev.zip');
-  await fs.outputFile(devPluginZip, zip);
-  devLog(`开发插件包已生成: ${devPluginZip}`);
-  devLog(`插件ID: ${id}`);
-
-  // 自动上传开发插件包
-  const shouldUpload = process.env.DEV_UPLOAD === 'true';
-  if (shouldUpload) {
-    await maybeUpload({
-      pluginZipPath: devPluginZip,
-      pluginId: id,
-      zipBuffer: zip,
-      pluginRoot,
-    });
-  } else {
+  const devPluginResult = await rebuildDevPluginPackage();
+  if (!devPluginResult?.ok) {
+    throw new Error(
+      `Failed to build dev plugin package: ${devPluginResult?.reason || 'unknown error'}`,
+    );
+  }
+  devLog(`开发插件包已生成: ${devPluginZipPath}`);
+  devLog(`插件ID: ${devPluginResult.id}`);
+  if (!devPluginAutoUploadEnabled) {
     devLog('提示：设置 DEV_UPLOAD=true 自动上传开发插件包');
   }
 

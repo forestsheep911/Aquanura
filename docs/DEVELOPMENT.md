@@ -61,6 +61,21 @@ When you run `pnpm dev`, the template starts a Vite development server with:
 3. All subsequent code changes are served from the local dev server
 4. Simply refresh the Kintone page to see changes
 
+### Manifest Validation
+
+The dev and build pipelines validate `plugin/src/manifest.json` using the official Kintone JSON Schema rules (via `@kintone/plugin-manifest-validator`).
+
+- Default: `MANIFEST_VALIDATE=strict`
+  - `pnpm build` fails fast on validation errors (exit code 1).
+  - `pnpm dev` fails fast on startup if the manifest is invalid.
+  - While `pnpm dev` is running, if a change makes the manifest invalid, the dev server keeps running but skips the rebuild and continues serving the last successful build.
+- Modes:
+  - `MANIFEST_VALIDATE=strict` (recommended)
+  - `MANIFEST_VALIDATE=warn` (prints errors but does not block)
+  - `MANIFEST_VALIDATE=off` (skips validation)
+
+When `plugin/src/manifest.json` changes and becomes valid again, the dev server automatically rebuilds the dev plugin package (and uploads it when `DEV_UPLOAD=true`) so Kintone can pick up the updated manifest.
+
 ### Development Badge
 
 When `DEV_MODE=true` in your `.env`, the plugin icon will show a "D" badge to distinguish development builds from production.
@@ -228,4 +243,3 @@ tail -f logistics/log/dev.log
 - Read [DEPLOYMENT.md](DEPLOYMENT.md) for production deployment
 - Read [LOG_SYSTEM.md](LOG_SYSTEM.md) for advanced logging
 - Read [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
-
