@@ -179,12 +179,12 @@ const forceJsxPlugin = {
   });
 
   console.log(
-    `[vite-build] 开发模式检测: DEV_MODE=${process.env.DEV_MODE}, NODE_ENV=${process.env.NODE_ENV}, isDevMode=${isDevMode}`,
+    `[vite-build] Dev mode detection: DEV_MODE=${process.env.DEV_MODE}, NODE_ENV=${process.env.NODE_ENV}, isDevMode=${isDevMode}`,
   );
 
-  // 在开发模式下为图标添加徽章
+  // Add badge to icon in dev mode
   if (isDevMode && manifest.icon) {
-    console.log('[vite-build] 为插件图标添加开发徽章');
+    console.log('[vite-build] Adding dev badge to plugin icon');
     try {
       const { addDevBadge } = require('../toolkit/plugin/manifest');
       const originalIcon = manifest.icon;
@@ -193,18 +193,18 @@ const forceJsxPlugin = {
       if (await fs.pathExists(iconPath)) {
         const devIconBuffer = await addDevBadge(iconPath);
 
-        // 将处理后的图标保存到临时位置
+        // Save processed icon to temporary location
         const tempIconPath = path.join(outDir, 'temp_icon.png');
         await fs.outputFile(tempIconPath, devIconBuffer);
 
-        // 临时修改manifest中的图标路径
+        // Temporarily modify icon path in manifest
         manifest.icon = path.relative(path.dirname(manifestPath), tempIconPath);
-        console.log('[vite-build] 开发徽章已添加到插件图标');
+        console.log('[vite-build] Dev badge added to plugin icon');
       } else {
-        console.warn(`[vite-build] 找不到图标文件: ${iconPath}`);
+        console.warn(`[vite-build] Icon file not found: ${iconPath}`);
       }
     } catch (error) {
-      console.warn('[vite-build] 添加开发徽章失败:', error.message);
+      console.warn('[vite-build] Failed to add dev badge:', error.message);
     }
   }
 
@@ -229,7 +229,7 @@ const forceJsxPlugin = {
   }
 
   if (process.env.QUIET !== 'true') {
-    console.log(`[vite-build] 已生成 ${finalZip}`);
-    console.log('[vite-build] 提示：使用 pnpm upload:dev 或 pnpm upload:prod 上传插件');
+    console.log(`[vite-build] Generated ${finalZip}`);
+    console.log('[vite-build] Tip: Use pnpm upload:dev or pnpm upload:prod to upload plugin');
   }
 })();

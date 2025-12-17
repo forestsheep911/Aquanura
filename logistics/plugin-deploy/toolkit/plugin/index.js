@@ -42,7 +42,7 @@ async function buildDevPlugin({
   const iconPath = path.join(dirname, manifest.icon);
   const manifestDir = manifestDirRelativeToProjectRoot || path.basename(dirname);
 
-  // 根据配置决定是否处理图标
+  // Decide whether to process icon based on configuration
   const iconType = devTools?.icon?.type || false;
   const devIcon = iconType ? await addDevBadge(iconPath) : undefined;
 

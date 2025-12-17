@@ -16,8 +16,8 @@ async function ensurePluginZip(pluginZip) {
   if (await fs.pathExists(pluginZip)) {
     return fs.readFile(pluginZip);
   }
-  console.error(chalk.red(`[upload-prod] 找不到插件包: ${pluginZip}`));
-  console.error(chalk.yellow('请先运行 pnpm --filter kintone-plugin-deploy run build 生成插件包'));
+  console.error(chalk.red(`[upload-prod] Plugin package not found: ${pluginZip}`));
+  console.error(chalk.yellow('Please run pnpm --filter kintone-plugin-deploy run build first to generate plugin package'));
   process.exit(1);
 }
 
@@ -27,7 +27,7 @@ async function inferPluginId(pluginRoot) {
     process.env.KINTONE_PLUGIN_ID ||
     process.env.KINTONE_DEV_PLUGIN_ID;
   if (envPluginId) {
-    console.log(chalk.gray('[upload-prod] 已读取环境中的插件ID'));
+    console.log(chalk.gray('[upload-prod] Plugin ID read from environment'));
     return envPluginId;
   }
   const ppkPath = path.join(pluginRoot, 'private.ppk');
@@ -38,11 +38,11 @@ async function inferPluginId(pluginRoot) {
     const ppkContent = await fs.readFile(ppkPath, 'utf-8');
     const publicKey = getPublicKeyDer(ppkContent);
     const pluginId = generatePluginId(publicKey);
-    console.log(chalk.gray(`[upload-prod] 自动推断插件ID: ${pluginId}`));
+    console.log(chalk.gray(`[upload-prod] Auto-inferred plugin ID: ${pluginId}`));
     return pluginId;
   } catch (error) {
     console.warn(
-      chalk.yellow(`[upload-prod] 无法读取 ${ppkPath} 推断插件ID: ${error?.message || error}`),
+      chalk.yellow(`[upload-prod] Failed to read ${ppkPath} to infer plugin ID: ${error?.message || error}`),
     );
     return undefined;
   }
@@ -59,14 +59,14 @@ async function inferPluginId(pluginRoot) {
   const password = process.env.KINTONE_PROD_PASSWORD;
 
   if (!baseUrl) {
-    console.error(chalk.red('[upload-prod] 缺少 KINTONE_PROD_BASE_URL 配置'));
+    console.error(chalk.red('[upload-prod] Missing KINTONE_PROD_BASE_URL configuration'));
     process.exit(1);
   }
 
   if (!(username && password)) {
-    console.error(chalk.red('[upload-prod] 缺少用户名和密码'));
-    console.error(chalk.yellow('插件上传需要系统管理员权限，必须使用用户名和密码认证'));
-    console.error('请在 .env 中设置 KINTONE_PROD_USERNAME 和 KINTONE_PROD_PASSWORD');
+    console.error(chalk.red('[upload-prod] Missing username and password'));
+    console.error(chalk.yellow('Plugin upload requires system administrator privileges, must use username and password authentication'));
+    console.error('Please set KINTONE_PROD_USERNAME and KINTONE_PROD_PASSWORD in .env');
     process.exit(1);
   }
 
@@ -84,5 +84,5 @@ async function inferPluginId(pluginRoot) {
     file: { name: path.basename(pluginZip), data: pluginBuffer },
   });
 
-  console.log(chalk.green('[upload-prod] 上传完成'));
+  console.log(chalk.green('[upload-prod] Upload completed'));
 })();

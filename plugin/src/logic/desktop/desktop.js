@@ -39,7 +39,7 @@ import { getCurrentLanguage, t } from '../i18n/i18n.js';
     const container = document.createElement('div');
     container.className = 'plugin-template-container';
 
-    // Build the message: "插件运行中，您保存的信息是：xxxx"
+    // Build the message: "Plugin running, your saved message is: xxxx"
     const statusText = t('desktop_pluginRunning');
     const messageText = config.message
       ? `${t('desktop_savedMessage')}${config.message}`
@@ -78,7 +78,7 @@ import { getCurrentLanguage, t } from '../i18n/i18n.js';
     const container = document.createElement('div');
     container.className = 'plugin-template-container';
 
-    // Build the message: "插件运行中，您保存的信息是：xxxx"
+    // Build the message: "Plugin running, your saved message is: xxxx"
     const statusText = t('desktop_pluginRunning');
     const messageText = config.message
       ? `${t('desktop_savedMessage')}${config.message}`

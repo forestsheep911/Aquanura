@@ -13,7 +13,7 @@ function normalizeErrorId(error) {
 }
 
 function logSuccess(action, result) {
-  logger.log(`插件${action}成功:`);
+  logger.log(`Plugin ${action} successful:`);
   logger.log(`- ID: ${result.id}`);
   logger.log(`- Version: ${result.version}`);
 }
@@ -33,13 +33,13 @@ class PluginUploader {
   async installWithFallback(fileKey) {
     try {
       const result = await this.client.plugin.installPlugin({ fileKey });
-      logSuccess('安装', result);
+      logSuccess('installed', result);
       return result;
     } catch (error) {
       const code = normalizeErrorCode(error);
       const existingId = normalizeErrorId(error);
       if (code === DUPLICATE_CODE && existingId) {
-        logger.warn(`检测到已有插件 (ID: ${existingId})，自动转为更新流程...`);
+        logger.warn(`Detected existing plugin (ID: ${existingId}), switching to update flow...`);
         return this.updatePlugin(existingId, fileKey);
       }
       throw error;
@@ -56,20 +56,20 @@ class PluginUploader {
       if (code === DUPLICATE_CODE && existingId) {
         if (existingId !== pluginId) {
           logger.warn(
-            `目标 ID (${pluginId}) 不存在，发现实际 ID (${existingId})，将对其执行更新...`,
+            `Target ID (${pluginId}) does not exist, found actual ID (${existingId}), updating it...`,
           );
         } else {
-          logger.warn(`目标 ID (${pluginId}) 已存在，重新尝试更新...`);
+          logger.warn(`Target ID (${pluginId}) already exists, retrying update...`);
         }
         return this.updatePlugin(existingId, fileKey);
       }
 
       if (code === ID_MISMATCH_CODE) {
-        logger.warn(`插件 ID 不匹配 (目标: ${pluginId})，尝试卸载后重新安装...`);
+        logger.warn(`Plugin ID mismatch (target: ${pluginId}), attempting uninstall and reinstall...`);
         return this.reinstall(pluginId, fileKey, error);
       }
 
-      logger.warn(`使用目标 ID (${pluginId}) 更新失败，尝试直接安装新插件...`);
+      logger.warn(`Update with target ID (${pluginId}) failed, attempting to install new plugin directly...`);
       return this.installWithFallback(fileKey);
     }
   }
@@ -77,29 +77,29 @@ class PluginUploader {
   async reinstall(pluginId, fileKey, originalError) {
     try {
       await this.client.plugin.uninstallPlugin({ id: pluginId });
-      logger.log(`插件已卸载 (ID: ${pluginId})`);
+      logger.log(`Plugin uninstalled (ID: ${pluginId})`);
       const result = await this.client.plugin.installPlugin({ fileKey });
-      logSuccess('重新安装', result);
+      logSuccess('reinstalled', result);
       return result;
     } catch (error) {
       const code = normalizeErrorCode(error);
       const conflictingId = normalizeErrorId(error);
 
       if (code === DUPLICATE_CODE && conflictingId) {
-        logger.warn('卸载后发现 ID 仍冲突，将对冲突 ID 执行更新...');
+        logger.warn('ID conflict still exists after uninstall, updating conflicting ID...');
         return this.updatePlugin(conflictingId, fileKey);
       }
 
-      logger.error('卸载并重新安装失败，请手动处理:');
-      logger.error('- 打开 kintone 管理后台删除冲突插件');
-      logger.error('- 暂时关闭 DEV_UPLOAD 或改为手动上传');
+      logger.error('Uninstall and reinstall failed, please handle manually:');
+      logger.error('- Open Kintone admin console to delete conflicting plugin');
+      logger.error('- Temporarily disable DEV_UPLOAD or switch to manual upload');
       throw originalError;
     }
   }
 
   async updatePlugin(pluginId, fileKey) {
     const result = await this.client.plugin.updatePlugin({ id: pluginId, fileKey });
-    logSuccess('更新', result);
+    logSuccess('updated', result);
     return result;
   }
 }

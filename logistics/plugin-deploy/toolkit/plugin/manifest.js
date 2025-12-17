@@ -93,20 +93,20 @@ function getViteBundledScripts(
 async function addDevBadge(iconPath) {
   let sharp;
   try {
-    // 延迟加载，避免在非开发模式下强制安装可选依赖
+    // Lazy load to avoid forcing optional dependency installation in non-dev mode
     sharp = require('sharp');
   } catch (error) {
-    throw new Error(`sharp 模块未安装或不可用，无法生成开发徽章: ${error?.message || error}`);
+    throw new Error(`sharp module not installed or unavailable, cannot generate dev badge: ${error?.message || error}`);
   }
 
   const image = sharp(iconPath);
   const metadata = await image.metadata();
   const size = metadata.width;
 
-  // 为大尺寸图片提供更合适的角标比例
-  let badgeRatio = 0.25; // 默认为25%
+  // Provide more appropriate badge ratio for large images
+  let badgeRatio = 0.25; // Default 25%
   if (size > 512) {
-    // 对于大图片，随着尺寸增大，角标比例适当增加
+    // For large images, badge ratio increases appropriately as size increases
     badgeRatio = 0.25 + Math.min(0.15, (size - 512) / 10000);
   }
 
@@ -133,8 +133,8 @@ async function addDevBadge(iconPath) {
   </g>
 </svg>`;
 
-  // 先将 SVG 转换为 PNG buffer
-  // 确保徽章尺寸不超过原圖尺寸
+  // First convert SVG to PNG buffer
+  // Ensure badge size does not exceed original image size
   const badgeBuffer = await sharp(Buffer.from(svg))
     .resize(size, size, {
       fit: 'inside',
@@ -143,7 +143,7 @@ async function addDevBadge(iconPath) {
     .png()
     .toBuffer();
 
-  // 合成圖片時強制匹配尺寸
+  // Force size matching when compositing images
   return image
     .resize(size, size)
     .composite([

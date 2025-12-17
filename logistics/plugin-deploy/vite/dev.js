@@ -28,7 +28,7 @@ const pluginRoot = resolvePluginRoot({ repoRoot });
 const pluginDistDir = resolvePluginDistDir({ repoRoot, pluginRoot });
 const manifestPath = resolvePluginManifestPath({ repoRoot, pluginRoot });
 
-// 本地文件日志系统
+// Local file logging system
 let devLogFile = null;
 const logWriteQueue = [];
 let logWriting = false;
@@ -52,8 +52,8 @@ async function writeToDevLog(message, level = 'INFO') {
       try {
         await fs.appendFile(devLogFile, `${JSON.stringify(entry)}\n`);
       } catch (error) {
-        // 只有在无法写入文件时才输出到控制台
-        console.error('[vite-dev] 无法写入日志文件:', error?.message || error);
+        // Only output to console when file write fails
+        console.error('[vite-dev] Failed to write log file:', error?.message || error);
       }
     }
     logWriting = false;
@@ -71,7 +71,7 @@ function devWarn(message) {
 function devError(message, error) {
   const fullMessage = error ? `${message}: ${error?.message || error}` : message;
   writeToDevLog(fullMessage, 'ERROR').catch(() => {});
-  // 错误仍然输出到控制台
+  // Errors are still output to console
   console.error(`[vite-dev] ${fullMessage}`);
 }
 
@@ -98,12 +98,12 @@ async function maybeUpload({
   const password = process.env.KINTONE_DEV_PASSWORD;
 
   if (!baseUrl) {
-    devWarn('DEV_UPLOAD=true 但未设置 KINTONE_DEV_BASE_URL，跳过自动上传');
+    devWarn('DEV_UPLOAD=true but KINTONE_DEV_BASE_URL is not set, skipping auto-upload');
     return;
   }
 
   if (!(username && password)) {
-    devWarn('DEV_UPLOAD=true 但缺少用户名/密码（插件上传需要管理员权限），跳过自动上传');
+    devWarn('DEV_UPLOAD=true but username/password missing (plugin upload requires admin privileges), skipping auto-upload');
     return;
   }
 
@@ -122,10 +122,10 @@ async function maybeUpload({
         const ppkContent = await fs.readFile(ppkPath, 'utf-8');
         const publicKey = getPublicKeyDer(ppkContent);
         pluginId = generatePluginId(publicKey);
-        devLog(`自动推断插件ID: ${pluginId}`);
+        devLog(`Auto-inferred plugin ID: ${pluginId}`);
       }
     } catch (error) {
-      devWarn(`无法根据 private.ppk 推断插件ID: ${error?.message || error}`);
+      devWarn(`Failed to infer plugin ID from private.ppk: ${error?.message || error}`);
     }
   }
 
@@ -134,12 +134,12 @@ async function maybeUpload({
 
   if (!pluginBuffer) {
     if (!pluginZipPath) {
-      devWarn('缺少插件包路径，无法执行自动上传');
+      devWarn('Missing plugin package path, cannot perform auto-upload');
       return;
     }
 
     if (!(await fs.pathExists(pluginZipPath))) {
-      devWarn(`未找到插件包: ${pluginZipPath}，请先运行 pnpm build:vite`);
+      devWarn(`Plugin package not found: ${pluginZipPath}, please run pnpm build:vite first`);
       return;
     }
 
@@ -156,9 +156,9 @@ async function maybeUpload({
       pluginId,
       file: { name: pluginName, data: pluginBuffer },
     });
-    devLog('已自动上传插件到开发环境');
+    devLog('Plugin auto-uploaded to dev environment');
   } catch (error) {
-    devError('自动上传失败', error);
+    devError('Auto-upload failed', error);
   }
 }
 
@@ -252,7 +252,7 @@ Environment:
   const envLazyWindowMs = parseDurationMs(envLazyWindowRaw);
   if (envLazyWindowRaw && !envLazyWindowMs) {
     console.warn(
-      `[vite-dev] DEV_LAZY_WINDOW="${envLazyWindowRaw}" 无法解析，将使用 ${formatDuration(
+      `[vite-dev] DEV_LAZY_WINDOW="${envLazyWindowRaw}" cannot be parsed, will use ${formatDuration(
         DEFAULT_LAZY_WINDOW_MS,
       )}`,
     );
@@ -260,14 +260,14 @@ Environment:
   let lazyQuietWindowMs = envLazyWindowMs ?? DEFAULT_LAZY_WINDOW_MS;
   let lazyWindowSource = envLazyWindowMs
     ? `DEV_LAZY_WINDOW=${envLazyWindowRaw}`
-    : `默认 ${formatDuration(DEFAULT_LAZY_WINDOW_MS)}`;
+    : `default ${formatDuration(DEFAULT_LAZY_WINDOW_MS)}`;
 
   const rawDevModeEnv = process.env.DEV_MODE || '';
   const envModeRaw = rawDevModeEnv.trim().toLowerCase();
   const truthyLegacyModes = new Set(['true', '1', 'yes', 'on']);
   const falsyLegacyModes = new Set(['false', '0', 'off', 'no']);
   let devMode = 'instant';
-  let modeSource = '默认';
+  let modeSource = 'default';
   if (envModeRaw) {
     if (envModeRaw === 'lazy' || envModeRaw === 'instant') {
       devMode = envModeRaw;
@@ -275,7 +275,7 @@ Environment:
     } else if (truthyLegacyModes.has(envModeRaw) || falsyLegacyModes.has(envModeRaw)) {
       modeSource = `DEV_MODE=${envModeRaw}`;
     } else {
-      console.warn(`[vite-dev] DEV_MODE="${rawDevModeEnv}" 未识别，将使用 instant 模式`);
+      console.warn(`[vite-dev] DEV_MODE="${rawDevModeEnv}" not recognized, will use instant mode`);
     }
   }
   const modeFlag = findModeFlag();
@@ -286,10 +286,10 @@ Environment:
       modeSource = '--mode';
     } else if (normalized) {
       console.warn(
-        `[vite-dev] 未知 --mode 选项 "${modeFlag.value}", 将继续使用 ${devMode} 模式`,
+        `[vite-dev] Unknown --mode option "${modeFlag.value}", will continue using ${devMode} mode`,
       );
     } else {
-      console.warn('[vite-dev] --mode 需要指定 instant 或 lazy');
+      console.warn('[vite-dev] --mode requires instant or lazy to be specified');
     }
     if (devMode === 'lazy' && modeFlag.durationIndex >= 0) {
       const durationCandidate = argv[modeFlag.durationIndex];
@@ -300,7 +300,7 @@ Environment:
           lazyWindowSource = `--mode ${durationCandidate}`;
         } else {
           console.warn(
-            `[vite-dev] 无法解析静默期 "${durationCandidate}"，继续使用 ${formatDuration(
+            `[vite-dev] Cannot parse quiet window "${durationCandidate}", continuing with ${formatDuration(
               lazyQuietWindowMs,
             )}`,
           );
@@ -340,16 +340,16 @@ Environment:
     return path.join(repoRoot, 'logistics', 'log');
   };
 
-  // 初始化日志文件
+  // Initialize log file
   const logDir = resolveLogDir();
   await fs.ensureDir(logDir);
   devLogFile = path.join(logDir, 'dev.log');
   const modeDescription = isLazyMode
-    ? `?? 懒编译模式已启用，静默窗口 ${formatDuration(lazyQuietWindowMs)} (${modeSource}，${lazyWindowSource})`
-    : `? 即时编译模式 (${modeSource})`;
+    ? `?? Lazy compilation mode enabled, quiet window ${formatDuration(lazyQuietWindowMs)} (${modeSource}, ${lazyWindowSource})`
+    : `? Instant compilation mode (${modeSource})`;
   devLog(modeDescription);
   if (isLazyMode) {
-    devLog('提示：按 r 可手动跳过静默期立即重建');
+    devLog('Tip: Press r to manually skip quiet window and rebuild immediately');
   }
   const readRequestJson = (req) =>
     new Promise((resolve, reject) => {
@@ -484,11 +484,11 @@ Environment:
     },
     appType: 'custom',
     define: {
-      // 端点路径常量，运行时与 location.origin 拼接
+      // Endpoint path constants, concatenated with location.origin at runtime
       __DEV_LOG_ENDPOINT__: JSON.stringify('/__devlog'),
       __DEV_LIVE_ENDPOINT__: JSON.stringify('/__live'),
       __PLUGIN_VERSION__: JSON.stringify(manifestVersion),
-      // 开发时日志开关控制（从环境变量读取）
+      // Development log toggle control (read from environment variables)
       __DEV_LOCAL_LOG_ENABLED__: JSON.stringify(process.env.DEV_LOCAL_LOG_ENABLED !== 'false'),
     },
   });
@@ -539,7 +539,7 @@ Environment:
     }
   });
 
-  // 构建初始版本到临时目录
+  // Build initial version to temporary directory
   const tempOut = path.join(pluginDistDir, '.dev-build');
   await fs.emptyDir(tempOut);
 
@@ -667,7 +667,7 @@ Environment:
     }
   };
 
-  devLog('正在构建初始版本...');
+  devLog('Building initial version...');
   await buildEntries();
   lastChange = Date.now();
 
@@ -689,9 +689,9 @@ Environment:
       relPath.includes('node_modules') ||
       relPath.includes('.git') ||
       relPath.endsWith('.log') ||
-      // 过滤 Vite 内部临时配置文件（如 vite.config.js.timestamp-xxx.mjs）
+      // Filter Vite internal temporary config files (e.g., vite.config.js.timestamp-xxx.mjs)
       fileName.includes('.timestamp-') ||
-      // 过滤其他常见的临时文件
+      // Filter other common temporary files
       fileName.endsWith('.tmp') ||
       fileName.startsWith('~')
     );
@@ -778,7 +778,7 @@ Environment:
     if (force) {
       quietDeadline = null;
       planRebuildCheck(0);
-      devLog(reason ? `🔁 手动触发重建 (${reason})` : '🔁 手动触发重建');
+      devLog(reason ? `🔁 Manual rebuild triggered (${reason})` : '🔁 Manual rebuild triggered');
       return;
     }
     if (isLazyMode) {
@@ -788,7 +788,7 @@ Environment:
       if (now - lastLazyNoticeAt > 1000) {
         const suffix = reason ? ` (${reason})` : '';
         devLog(
-          `⏳ 懒编译: 检测到源码变更${suffix}，将在 ${formatDuration(lazyQuietWindowMs)} 静默后重建`
+          `⏳ Lazy compilation: source change detected${suffix}, will rebuild after ${formatDuration(lazyQuietWindowMs)} quiet window`
         );
         lastLazyNoticeAt = now;
       }
@@ -804,33 +804,33 @@ Environment:
       const relPath = relRepo(file);
       if (shouldIgnoreFile(file)) return;
       devLog(`➕ ${relPath}`);
-      // 不触发重建，只记录日志
+      // Do not trigger rebuild, only log
     });
     server.watcher.on('change', (file) => {
       if (!file) return;
       const relPath = relRepo(file);
       if (shouldIgnoreFile(file)) return;
       devLog(`📝 ${relPath}`);
-      // 不触发重建，只记录日志
+      // Do not trigger rebuild, only log
     });
     server.watcher.on('unlink', (file) => {
       if (!file) return;
       const relPath = relRepo(file);
       if (shouldIgnoreFile(file)) return;
       devLog(`❌ ${relPath}`);
-      // 不触发重建，只记录日志
+      // Do not trigger rebuild, only log
     });
   } catch (error) {
-    devWarn(`监听文件变更失败: ${error?.message || error}`);
+    devWarn(`Failed to watch file changes: ${error?.message || error}`);
   }
 
-  // 在初始构建完成后，注册重建监听器
+  // Register rebuild watcher after initial build completes
   server.watcher.on('change', (file) => {
     if (!file || shouldIgnoreFile(file)) return;
     const relPath = relPlugin(file);
-    // 仅在 src 目录下的变更触发重建
+    // Only changes in src directory trigger rebuild
     if (relPath.startsWith('src/')) {
-      devLog(`🔨 源码变化: ${relPath}`);
+      devLog(`🔨 Source change: ${relPath}`);
       scheduleRebuild({ reason: relPath });
     }
   });
@@ -903,10 +903,10 @@ Environment:
         for (const client of active) {
           client.send(payload);
         }
-        devLog(`📡 广播到 ${active.length} 个客户端 (ts: ${lastChange})`);
+        devLog(`📡 Broadcasting to ${active.length} clients (ts: ${lastChange})`);
       }
     } catch (error) {
-      devError('broadcastWS 错误', error);
+      devError('broadcastWS error', error);
     }
   };
 
@@ -922,25 +922,25 @@ Environment:
       try {
         ws.send(JSON.stringify({ ts: lastChange }));
       } catch (error) {
-        devError('发送初始时间戳失败', error);
+        devError('Failed to send initial timestamp', error);
       }
       ws.on('error', (err) => {
-        devError('WebSocket客户端错误', err);
+        devError('WebSocket client error', err);
       });
     });
     server.httpServer.on('upgrade', (req, socket, head) => {
       if (!req.url || !req.url.startsWith('/__live/ws')) return;
       wsServer.handleUpgrade(req, socket, head, (ws) => {
         wsServer.emit('connection', ws, req);
-        devLog(`🔗 WebSocket连接建立 (总计: ${wsServer.clients.size})`);
+        devLog(`🔗 WebSocket connection established (total: ${wsServer.clients.size})`);
       });
     });
   } catch (error) {
-    devError('WebSocket初始化失败', error);
+    devError('WebSocket initialization failed', error);
     wsServer = null;
   }
 
-  // 提供静态文件服务
+  // Serve static files
   server.middlewares.use('/__static', async (req, res, next) => {
     try {
       const relPath = decodeURIComponent((req.url || '/').replace(/^\/__static\/?/, ''));
@@ -983,58 +983,58 @@ Environment:
   }
 
   if (actualPort !== preferPort) {
-    devLog('⚠️  端口冲突检测:');
-    devLog(`🎯 期望端口: ${preferPort} (已被占用)`);
-    devLog(`🔄 自动切换到: ${actualPort}`);
-    devLog('✅ 插件将自动适配新端口并重新上传到Kintone');
+    devLog('⚠️  Port conflict detected:');
+    devLog(`🎯 Expected port: ${preferPort} (already in use)`);
+    devLog(`🔄 Auto-switched to: ${actualPort}`);
+    devLog('✅ Plugin will automatically adapt to new port and re-upload to Kintone');
   } else {
-    devLog(`✅ 端口 ${actualPort} 可用，正常启动`);
+    devLog(`✅ Port ${actualPort} available, starting normally`);
   }
 
   if (wsServer) {
-    devLog(`🔄 WebSocket 热重载: wss://127.0.0.1:${actualPort}/__live/ws`);
+    devLog(`🔄 WebSocket hot reload: wss://127.0.0.1:${actualPort}/__live/ws`);
   } else {
-    devLog('⚠️ WebSocket 热重载不可用（缺少 ws 依赖或初始化失败）');
+    devLog('⚠️ WebSocket hot reload unavailable (missing ws dependency or initialization failed)');
   }
-  devLog(`🔁 SSE 热更新: https://127.0.0.1:${actualPort}/__live/sse`);
+  devLog(`🔁 SSE hot update: https://127.0.0.1:${actualPort}/__live/sse`);
 
-  // 注释掉 server.printUrls() 以保持控制台静默
+  // Commented out server.printUrls() to keep console quiet
   // server.printUrls();
-  devLog('开发服务器已启动');
-  devLog('HTTPS 已启用，如遇信任问题可执行 pnpm fix-cert');
+  devLog('Dev server started');
+  devLog('HTTPS enabled, run pnpm fix-cert if you encounter trust issues');
   const devServerOrigin = `https://127.0.0.1:${actualPort}`;
-  devLog(`日志端点: ${devServerOrigin}/__devlog`);
+  devLog(`Log endpoint: ${devServerOrigin}/__devlog`);
   if (allowLocalLog) {
-    devLog(`本地日志文件: ${path.join(resolveLogDir(), 'dev.log')}`);
+    devLog(`Local log file: ${path.join(resolveLogDir(), 'dev.log')}`);
   } else if (isProduction) {
-    devLog('本地日志已因生产模式禁用');
+    devLog('Local logging disabled due to production mode');
   } else {
-    devLog('本地日志已禁用 (DEV_LOCAL_LOG_ENABLED=false)');
+    devLog('Local logging disabled (DEV_LOCAL_LOG_ENABLED=false)');
   }
 
-  // 构建开发专用插件包（连接到 Vite 服务器）
+  // Build dev plugin package (connected to Vite server)
   devPluginBaseUrl = `https://127.0.0.1:${actualPort}/__static/js`;
-  devLog('正在构建开发插件包...');
+  devLog('Building dev plugin package...');
   const devPluginResult = await rebuildDevPluginPackage();
   if (!devPluginResult?.ok) {
     throw new Error(
       `Failed to build dev plugin package: ${devPluginResult?.reason || 'unknown error'}`,
     );
   }
-  devLog(`开发插件包已生成: ${devPluginZipPath}`);
-  devLog(`插件ID: ${devPluginResult.id}`);
+  devLog(`Dev plugin package generated: ${devPluginZipPath}`);
+  devLog(`Plugin ID: ${devPluginResult.id}`);
   if (!devPluginAutoUploadEnabled) {
-    devLog('提示：设置 DEV_UPLOAD=true 自动上传开发插件包');
+    devLog('Tip: Set DEV_UPLOAD=true to auto-upload dev plugin package');
   }
 
-  // 输出一条简洁的启动完成提示
-  console.log(`[vite-dev] ✅ 开发服务器已启动 (端口: ${actualPort}，日志文件: ${devLogFile})`);
+  // Output a concise startup completion message
+  console.log(`[vite-dev] ✅ Dev server started (port: ${actualPort}, log file: ${devLogFile})`);
   console.log(
-    `[vite-dev] 当前编译模式: ${
-      isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} 静默)` : 'instant'
+    `[vite-dev] Current compilation mode: ${
+      isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} quiet)` : 'instant'
     }`,
   );
-  console.log('[vite-dev] 🔁 按 r 立即重建，按 q 退出，Ctrl+C 也可中断');
+  console.log('[vite-dev] 🔁 Press r to rebuild immediately, q to quit, Ctrl+C also works');
 
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
@@ -1043,17 +1043,17 @@ Environment:
 
     process.stdin.on('data', (key) => {
       if (key === '\u0003') {
-        console.log('\n[vite-dev] 收到退出信号，正在关闭...');
+        console.log('\n[vite-dev] Received exit signal, shutting down...');
         process.exit(0);
       }
 
       if (key === 'r' || key === 'R') {
-        console.log('[vite-dev] 🔁 手动触发立即重建...');
-        scheduleRebuild({ reason: '手动触发', force: true });
+        console.log('[vite-dev] 🔁 Manual rebuild triggered...');
+        scheduleRebuild({ reason: 'manual trigger', force: true });
       }
 
       if (key === 'q' || key === 'Q') {
-        console.log('\n[vite-dev] 正在关闭开发服务器...');
+        console.log('\n[vite-dev] Shutting down dev server...');
         process.exit(0);
       }
     });
