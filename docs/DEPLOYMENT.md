@@ -216,12 +216,15 @@ jobs:
       - run: pnpm build
       - name: Upload to production
         env:
-          KINTONE_PROD_BASE_URL: ${{ secrets.KINTONE_URL }}
-          KINTONE_PROD_API_TOKEN: ${{ secrets.KINTONE_TOKEN }}
+          # Plugin upload requires a system administrator account.
+          # API Tokens are app-level and cannot be used for plugin management.
+          KINTONE_PROD_BASE_URL: ${{ secrets.KINTONE_PROD_BASE_URL }}
+          KINTONE_PROD_USERNAME: ${{ secrets.KINTONE_PROD_USERNAME }}
+          KINTONE_PROD_PASSWORD: ${{ secrets.KINTONE_PROD_PASSWORD }}
         run: pnpm upload:prod
 ```
 
-Store credentials in GitHub Secrets.
+Store credentials in GitHub Secrets (base URL, username, password).
 
 ## Troubleshooting Deployment
 
@@ -288,4 +291,3 @@ Store credentials in GitHub Secrets.
 - Read [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common deployment issues
 - Set up CI/CD for automated deployments
 - Create a release checklist for your team
-
