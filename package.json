@@ -6,11 +6,11 @@
   "scripts": {
     "check": "biome check --write",
     "format": "biome format --write",
-    "fix-cert": "pnpm --filter kintone-plugin-deploy run fix-cert",
-    "dev": "pnpm --filter kintone-plugin-deploy run dev",
-    "build": "pnpm --filter kintone-plugin-deploy run build",
-    "upload:dev": "pnpm --filter kintone-plugin-deploy run upload-dev",
-    "upload:prod": "pnpm --filter kintone-plugin-deploy run upload-prod"
+    "fix-cert": "node logistics/plugin-deploy/fix-cert.js",
+    "dev": "node logistics/plugin-deploy/vite/dev.js",
+    "build": "node logistics/plugin-deploy/vite/build.js",
+    "upload:dev": "node logistics/plugin-deploy/upload-dev.js",
+    "upload:prod": "node logistics/plugin-deploy/upload-prod.js"
   },
   "keywords": ["kintone", "plugin", "vite", "template", "hot-reload"],
   "author": "",

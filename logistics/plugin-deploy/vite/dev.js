@@ -214,17 +214,25 @@ const formatDuration = (ms) => {
 (async () => {
   const argv = process.argv.slice(2);
   if (argv.includes('--help') || argv.includes('-h')) {
-    console.log(`Usage: pnpm --filter ai-translate-plugin-deploy run dev [options]
+    console.log(`Usage:
+  pnpm dev --mode lazy 17s
+  node logistics/plugin-deploy/vite/dev.js --mode lazy 17s
 
 Options:
   --help          Show this message and exit
   --mode [instant|lazy [quietWindow]]
-                  Configure rebuild scheduling (e.g. --mode lazy 10m)
+                  Configure rebuild scheduling
+                  Examples:
+                    --mode instant          (immediate rebuild, default)
+                    --mode lazy            (lazy compilation with default 60s quiet window)
+                    --mode lazy 17s        (lazy compilation with 17s quiet window)
+                    --mode lazy 5m         (lazy compilation with 5 minutes quiet window)
+                    --mode lazy 2h         (lazy compilation with 2 hours quiet window)
   VITE_PORT       Override dev server port (default 5173)
   VITE_HOST       Override dev server host (default 127.0.0.1)
-  VITE_LOG_LEVEL  Set Vite log level (info|warn|error|silent)
+  VITE_LOG_LEVEL Set Vite log level (info|warn|error|silent)
 
-Environment:
+Environment Variables:
   DEV_MODE           Default dev mode (instant|lazy)
   DEV_LAZY_WINDOW    Quiet window for lazy mode (e.g. 45s, 5m, 2h)
   DEV_HTTPS_DOMAINS  Comma-separated additional domains for the certificate
@@ -240,7 +248,7 @@ Environment:
       if (arg === '--mode') {
         return { provided: true, value: argv[i + 1], durationIndex: i + 2 };
       }
-      if (arg && arg.startsWith('--mode=')) {
+      if (arg?.startsWith('--mode=')) {
         const [, rawValue = ''] = arg.split('=');
         return { provided: true, value: rawValue, durationIndex: i + 1 };
       }
