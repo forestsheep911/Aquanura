@@ -12,7 +12,14 @@
       "quotes",
       "plugin/dist",
       "logistics/plugin-deploy/node_modules",
-      "**/*.d.ts"
+      "**/*.d.ts",
+      "**/*.log",
+      "logistics/log/**",
+      "**/.dev-build/**",
+      "**/build.manifest.json",
+      "**/temp_icon.png",
+      "pnpm-lock.yaml",
+      "package-lock.json"
     ]
   },
   "formatter": {
