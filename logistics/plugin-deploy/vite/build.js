@@ -84,20 +84,41 @@ const forceJsxPlugin = {
 
   const outDir = resolvePluginDistDir({ repoRoot, pluginRoot });
   const logLevel = process.env.VITE_LOG_LEVEL || 'info';
+
+  // Check build mode: support both --dev flag and DEV_MODE environment variable
+  const hasDevFlag = process.argv.includes('--dev');
   const devModeEnv = String(process.env.DEV_MODE ?? '')
     .trim()
     .toLowerCase();
-  const isDevMode = devModeEnv === '' ? false : !['false', '0', 'off', 'no'].includes(devModeEnv);
 
+  let isDevMode;
+  if (hasDevFlag) {
+    isDevMode = true;
+  } else if (devModeEnv === '') {
+    isDevMode = false; // Default to production mode
+  } else {
+    isDevMode = !['false', '0', 'off', 'no'].includes(devModeEnv);
+  }
+
+  // Strip development-only scripts in production mode
   if (!isDevMode) {
     const stripDevScripts = (section) => {
       if (!section || !Array.isArray(section.js)) return;
-      // Filter out development-only scripts (live-reload)
-      section.js = section.js.filter((item) => item && !/dev\/live-reload\.js$/.test(item));
+      // Filter out development-only scripts (live-reload and logger)
+      section.js = section.js.filter(
+        (item) =>
+          item &&
+          !/dev\/live-reload\.js$/.test(item) &&
+          !/log\/live-reload\.js$/.test(item) &&
+          !/log\/logger\.js$/.test(item)
+      );
     };
     stripDevScripts(manifest.desktop);
     stripDevScripts(manifest.mobile);
     stripDevScripts(manifest.config);
+    console.log(chalk.green('[vite-build] Build mode: PRODUCTION - Development scripts stripped'));
+  } else {
+    console.log(chalk.yellow('[vite-build] Build mode: DEVELOPMENT - Development features retained'));
   }
 
   const esbuildOptions = {
@@ -178,9 +199,12 @@ const forceJsxPlugin = {
     spaces: 2,
   });
 
-  console.log(
-    `[vite-build] Dev mode detection: DEV_MODE=${process.env.DEV_MODE}, NODE_ENV=${process.env.NODE_ENV}, isDevMode=${isDevMode}`,
-  );
+  // Debug log for dev mode detection (only in verbose mode)
+  if (logLevel === 'debug') {
+    console.log(
+      `[vite-build] Dev mode detection: --dev=${hasDevFlag}, DEV_MODE=${process.env.DEV_MODE}, isDevMode=${isDevMode}`,
+    );
+  }
 
   // Add badge to icon in dev mode
   if (isDevMode && manifest.icon) {
