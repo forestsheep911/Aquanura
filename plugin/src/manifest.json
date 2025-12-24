@@ -40,7 +40,7 @@
   },
   "config": {
     "html": "html/config.html",
-    "js": ["dev/live-reload.js", "logic/config/config.js"],
+    "js": ["dev/live-reload.js", "log/logger.js", "logic/config/config.js"],
     "css": ["css/config.css"]
   }
 }

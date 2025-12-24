@@ -61,13 +61,17 @@ function transformScriptUrls(manifest, baseUrl) {
 function transformScriptUrlsVite(manifest, baseUrl, manifestDirRelativeToProjectRoot) {
   const types = ['desktop', 'mobile', 'config'];
   for (const type of types) {
+    // Transform JS files only (CSS files stay as-is and are bundled into the plugin zip)
     const jsFiles = manifest[type]?.js || [];
-    if (jsFiles.length === 0) continue;
-    manifest[type].js = jsFiles.map((file) => {
-      if (/^https?:\/\//.test(file)) return file;
-      const relative = [manifestDirRelativeToProjectRoot, file].filter(Boolean).join('/');
-      return `${baseUrl}/${relative}`;
-    });
+    if (jsFiles.length > 0) {
+      manifest[type].js = jsFiles.map((file) => {
+        if (/^https?:\/\//.test(file)) return file;
+        const relative = [manifestDirRelativeToProjectRoot, file].filter(Boolean).join('/');
+        return `${baseUrl}/${relative}`;
+      });
+    }
+    // CSS files are NOT transformed - they remain as relative paths
+    // and get bundled into the plugin zip, loaded by Kintone from the plugin package
   }
   return manifest;
 }

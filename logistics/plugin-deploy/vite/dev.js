@@ -712,7 +712,8 @@ Environment Variables:
       devTools: {
         icon: { type: 'dev-badge' },
       },
-      viteMode: false,
+      viteMode: true,
+      manifestDirRelativeToProjectRoot: 'src',
     });
 
     devPluginId = id;
@@ -1112,12 +1113,23 @@ Environment Variables:
     wsServer = null;
   }
 
-  // Serve static files
+  // Serve static files (JS from tempOut, CSS/other assets from src)
   server.middlewares.use('/__static', async (req, res, next) => {
     try {
       const relPath = decodeURIComponent((req.url || '/').replace(/^\/__static\/?/, ''));
-      const filePath = path.join(tempOut, relPath);
-      if (!(await fs.pathExists(filePath))) return next();
+
+      // Try tempOut first (compiled JS files)
+      let filePath = path.join(tempOut, relPath);
+      let fileExists = await fs.pathExists(filePath);
+
+      // If not found in tempOut, try source directory (CSS, images, etc.)
+      if (!fileExists) {
+        filePath = path.join(pluginRoot, 'src', relPath);
+        fileExists = await fs.pathExists(filePath);
+      }
+
+      if (!fileExists) return next();
+
       const ext = path.extname(filePath).toLowerCase();
       const type =
         ext === '.js'
@@ -1126,7 +1138,13 @@ Environment Variables:
             ? 'text/css'
             : ext === '.html'
               ? 'text/html'
-              : 'application/octet-stream';
+              : ext === '.png'
+                ? 'image/png'
+                : ext === '.jpg' || ext === '.jpeg'
+                  ? 'image/jpeg'
+                  : ext === '.svg'
+                    ? 'image/svg+xml'
+                    : 'application/octet-stream';
       res.setHeader('Content-Type', type);
       res.setHeader('Cache-Control', 'no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');

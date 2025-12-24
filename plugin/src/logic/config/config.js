@@ -15,6 +15,9 @@ import { t } from '../i18n/i18n.js';
   // Log script load to local file only (with source file info)
   logger.file('Plugin script loaded successfully', { source: 'logic/config/config.js' });
 
+  // CSS is loaded automatically by Kintone from manifest.json's css array
+  // No need for dynamic loading - CSS files are bundled into the plugin zip
+
   const config = kintone.plugin.app.getConfig(PLUGIN_ID);
 
   /**
