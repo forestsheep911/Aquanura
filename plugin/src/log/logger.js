@@ -43,14 +43,18 @@
   function sendLog(level, message, additionalData = {}) {
     if (!isDev) return;
 
+    // Extract source from additionalData for prominent placement
+    const { source, ...restData } = additionalData;
+
     const logData = {
       level: level,
+      source: source || 'unknown', // Source file path for tracing
       message: typeof message === 'string' ? message : JSON.stringify(message),
       pluginId: getPluginId(),
       domain: getDomain(),
       pluginVersion: pluginVersion,
       timestamp: new Date().toISOString(),
-      ...additionalData,
+      ...restData,
     };
 
     // Try to get dev server origin
@@ -86,6 +90,9 @@
    * Logger API
    */
   const logger = {
+    /**
+     * Log to console AND local file
+     */
     info: (message, data) => {
       console.log('[Plugin]', message, data || '');
       sendLog('INFO', message, data);
@@ -102,8 +109,33 @@
       console.debug('[Plugin]', message, data || '');
       sendLog('DEBUG', message, data);
     },
+    /**
+     * Log to local file ONLY (silent, no console output)
+     * Use this for verbose/detailed logs to keep console clean
+     */
+    file: (message, data) => {
+      sendLog('INFO', message, data);
+    },
+    fileWarn: (message, data) => {
+      sendLog('WARN', message, data);
+    },
+    fileError: (message, data) => {
+      sendLog('ERROR', message, data);
+    },
+    fileDebug: (message, data) => {
+      sendLog('DEBUG', message, data);
+    },
   };
 
   // Export to global scope
   window.PluginLogger = logger;
+
+  // Show a friendly tip about local file logging in development mode
+  if (isDev) {
+    console.log(
+      '%c💡 Tip: Logs are being saved to local file (logistics/log/dev.log). ' +
+        'Consider reducing console output and reviewing the log file for a cleaner debugging experience.',
+      'color: #4CAF50; font-style: italic;'
+    );
+  }
 })();

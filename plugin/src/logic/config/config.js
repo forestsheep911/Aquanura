@@ -7,6 +7,14 @@
 import { t } from '../i18n/i18n.js';
 
 ((PLUGIN_ID) => {
+  // Import logger if available
+  const logger = window.PluginLogger || {
+    file: () => {}, // Silent fallback for file-only logging
+  };
+
+  // Log script load to local file only (with source file info)
+  logger.file('Plugin script loaded successfully', { source: 'logic/config/config.js' });
+
   const config = kintone.plugin.app.getConfig(PLUGIN_ID);
 
   /**
