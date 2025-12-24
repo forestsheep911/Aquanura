@@ -75,6 +75,114 @@ function devError(message, error) {
   console.error(`[vite-dev] ${fullMessage}`);
 }
 
+// ============================================================
+// 依赖图：用于增量编译
+// ============================================================
+
+// 源文件 -> 依赖它的入口集合
+const fileToEntries = new Map();
+// 入口文件 -> 它依赖的所有源文件
+const entryToFiles = new Map();
+
+/**
+ * 规范化模块路径，提取相对于 src 目录的路径
+ * @param {string} modulePath - 模块绝对路径或相对路径
+ * @returns {string|null} - 规范化后的相对路径，或 null（如果是 node_modules）
+ */
+function normalizeModulePath(modulePath) {
+  if (!modulePath) return null;
+  // 跳过 node_modules
+  if (modulePath.includes('node_modules')) return null;
+  // 跳过虚拟模块
+  if (modulePath.startsWith('\0')) return null;
+  
+  // 转换为正斜杠
+  const normalized = modulePath.replace(/\\/g, '/');
+  
+  // 提取 src/ 之后的部分
+  const srcIndex = normalized.indexOf('/src/');
+  if (srcIndex !== -1) {
+    return 'src' + normalized.slice(srcIndex + 4);
+  }
+  
+  // 如果路径已经是相对路径（以 src/ 开头）
+  if (normalized.startsWith('src/')) {
+    return normalized;
+  }
+  
+  return null;
+}
+
+/**
+ * 规范化变化文件的路径
+ * @param {string} changedFile - 变化文件的相对路径
+ * @returns {string} - 规范化后的路径
+ */
+function normalizeFilePath(changedFile) {
+  return changedFile.replace(/\\/g, '/');
+}
+
+/**
+ * 更新依赖图
+ * @param {string} entryRel - 入口文件相对路径 (如 'js/desktop.js')
+ * @param {string[]} modulePaths - 该入口依赖的所有模块路径
+ */
+function updateDependencyGraph(entryRel, modulePaths) {
+  // 清除该入口的旧依赖
+  const oldFiles = entryToFiles.get(entryRel) || new Set();
+  for (const file of oldFiles) {
+    const entries = fileToEntries.get(file);
+    if (entries) {
+      entries.delete(entryRel);
+      if (entries.size === 0) {
+        fileToEntries.delete(file);
+      }
+    }
+  }
+  
+  // 建立新依赖
+  const newFiles = new Set();
+  for (const modulePath of modulePaths) {
+    const normalized = normalizeModulePath(modulePath);
+    if (!normalized) continue;
+    
+    newFiles.add(normalized);
+    if (!fileToEntries.has(normalized)) {
+      fileToEntries.set(normalized, new Set());
+    }
+    fileToEntries.get(normalized).add(entryRel);
+  }
+  
+  entryToFiles.set(entryRel, newFiles);
+}
+
+/**
+ * 查找受影响的入口文件
+ * @param {string} changedFile - 变化文件的相对路径
+ * @returns {Set<string>|null} - 受影响的入口集合，或 null（表示需要全量编译）
+ */
+function getAffectedEntries(changedFile) {
+  const normalized = normalizeFilePath(changedFile);
+  const affected = fileToEntries.get(normalized);
+  
+  if (!affected || affected.size === 0) {
+    // 未知文件变化，保守策略：返回 null 表示全量编译
+    return null;
+  }
+  
+  return new Set(affected);
+}
+
+/**
+ * 清空依赖图（用于全量重建时）
+ */
+function clearDependencyGraph() {
+  fileToEntries.clear();
+  entryToFiles.clear();
+}
+
+// ============================================================
+
 async function createReactPlugin() {
   const mod = await import('@vitejs/plugin-react');
   const react = mod?.default;
@@ -642,7 +750,8 @@ Environment Variables:
 
     for (let index = 0; index < list.length; index += 1) {
       const info = list[index];
-      await viteBuild({
+      // 使用 write: false 获取 bundle 信息用于依赖追踪
+      const result = await viteBuild({
         root: pluginRoot,
         plugins: [forceJsxPlugin, reactPlugin],
         logLevel: process.env.VITE_LOG_LEVEL || (QUIET ? 'silent' : 'error'),
@@ -660,6 +769,7 @@ Environment Variables:
         build: {
           outDir: tempOut,
           emptyOutDir: isFull && index === 0,
+          write: false, // 先不写入，获取 bundle 信息
           chunkSizeWarningLimit: 4096,
           rollupOptions: {
             input: info.absPath,
@@ -672,6 +782,27 @@ Environment Variables:
           },
         },
       });
+
+      // 从构建结果中提取依赖关系
+      const output = result?.output || [];
+      for (const chunk of output) {
+        if (chunk.type === 'chunk' && chunk.isEntry) {
+          // 获取该 chunk 依赖的所有模块
+          const modulePaths = Object.keys(chunk.modules || {});
+          updateDependencyGraph(info.rel, modulePaths);
+        }
+      }
+
+      // 手动写入构建产物到目标目录
+      for (const chunk of output) {
+        const outputPath = path.join(tempOut, chunk.fileName);
+        await fs.ensureDir(path.dirname(outputPath));
+        if (chunk.type === 'chunk') {
+          await fs.writeFile(outputPath, chunk.code);
+        } else if (chunk.type === 'asset') {
+          await fs.writeFile(outputPath, chunk.source);
+        }
+      }
     }
   };
 
@@ -683,6 +814,7 @@ Environment Variables:
   let rebuilding = false;
   let pendingChanges = false;
   let pendingManifestChange = false;
+  let pendingChangedFiles = new Set(); // 追踪变化的文件，用于增量编译
   let quietDeadline = null;
   let lastLazyNoticeAt = 0;
   const relRepo = (p) => path.relative(repoRoot, p).replace(/\\/g, '/');
@@ -731,11 +863,17 @@ Environment Variables:
     rebuilding = true;
     const previousDeadline = quietDeadline;
     quietDeadline = null;
+    
+    // 复制并清空待处理的变化文件集合
+    const changedFiles = new Set(pendingChangedFiles);
+    pendingChangedFiles.clear();
+    
     try {
       if (shouldReloadManifest) {
         manifest = await fs.readJSON(manifestPath);
         manifestVersion = String(manifest.version ?? '');
         computeEntriesFromManifest();
+        clearDependencyGraph(); // manifest 变化时清空依赖图
 
         const validation = validateCurrentManifest({ prefix: '[vite-dev]' });
         if (!validation.valid) {
@@ -746,7 +884,32 @@ Environment Variables:
         }
       }
 
-      await buildEntries();
+      // 计算受影响的入口（增量编译）
+      let targetRelSet = null;
+      if (changedFiles.size > 0 && !shouldReloadManifest) {
+        targetRelSet = new Set();
+        for (const file of changedFiles) {
+          const affected = getAffectedEntries(file);
+          if (affected === null) {
+            // 某个文件无法追踪（新文件或未知文件），回退到全量编译
+            targetRelSet = null;
+            devLog(`Unknown file changed: ${file}, falling back to full rebuild`);
+            break;
+          }
+          for (const entry of affected) {
+            targetRelSet.add(entry);
+          }
+        }
+      }
+
+      // 输出编译日志
+      if (targetRelSet && targetRelSet.size > 0) {
+        devLog(`📦 Incremental build: ${Array.from(targetRelSet).join(', ')}`);
+      } else {
+        devLog(`📦 Full rebuild: all entries`);
+      }
+
+      await buildEntries(targetRelSet);
 
       if (shouldReloadManifest) {
         const result = await rebuildDevPluginPackage();
@@ -839,6 +1002,7 @@ Environment Variables:
     // Only changes in src directory trigger rebuild
     if (relPath.startsWith('src/')) {
       devLog(`🔨 Source change: ${relPath}`);
+      pendingChangedFiles.add(relPath); // 记录变化的文件用于增量编译
       scheduleRebuild({ reason: relPath });
     }
   });
