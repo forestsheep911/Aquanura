@@ -4,13 +4,18 @@
  * Automatically reloads the page when source files change during development.
  * Based on: AI-Translate-Plugin live-reload system
  *
- * Connection fallback chain: WebSocket -> SSE -> Polling
+ * Connection fallback chain: WebSocket -> Polling (skip SSE due to auto-reconnect issues)
  */
 
 (() => {
   const MAX_WS_ATTEMPTS = 1;
   const WS_RETRY_DELAY = 800;
-  const POLL_INTERVAL = 800;
+
+  // Backoff configuration for connection failures
+  const MAX_CONSECUTIVE_FAILURES = 8; // Stop retrying after this many failures
+  const INITIAL_POLL_INTERVAL = 1000; // Start with 1 second
+  const MAX_BACKOFF_INTERVAL = 60000; // Max 60 seconds between retries
+  const BACKOFF_MULTIPLIER = 2; // Exponential backoff factor
 
   // Enable debug logs with: localStorage.setItem('pluginLiveReloadDebug', 'true')
   const debugEnabled =
@@ -40,7 +45,7 @@
    * Infer development server URLs from loaded scripts
    */
   function inferLiveUrls() {
-    const result = { ws: null, sse: null, poll: null };
+    const result = { ws: null, poll: null };
     const normalize = (url) => url.replace(/^https?:\/\//, '');
 
     try {
@@ -61,7 +66,6 @@
               const wsScheme = devOrigin.startsWith('https') ? 'wss:' : 'ws:';
               const httpScheme = devOrigin.startsWith('https') ? 'https:' : 'http:';
               result.ws = `${wsScheme}//${host}${endpointPath}/ws`;
-              result.sse = `${httpScheme}//${host}${endpointPath}/sse`;
               result.poll = `${httpScheme}//${host}${endpointPath}`;
               return result;
             }
@@ -93,7 +97,6 @@
       const wsScheme = scheme === 'https' ? 'wss:' : 'ws:';
       const httpScheme = scheme === 'https' ? 'https:' : 'http:';
       result.ws = `${wsScheme}//${hostPort}/__live/ws`;
-      result.sse = `${httpScheme}//${hostPort}/__live/sse`;
       result.poll = `${httpScheme}//${hostPort}/__live`;
     } catch {
       /* noop */
@@ -121,76 +124,125 @@
   }
 
   /**
-   * Fallback: Polling mode
+   * Calculate backoff interval with exponential growth
    */
-  function startPolling(state, pollUrl) {
-    if (!pollUrl) return;
-    if (state.pollTimer) return;
-    warnLog('fallback to polling mode');
-    state.channel = 'poll';
-    state.pollTimer = setInterval(async () => {
-      try {
-        const resp = await fetch(pollUrl, {
-          method: 'GET',
-          cache: 'no-store',
-          credentials: 'omit',
-        });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        handleTimestamp(state, data?.ts);
-      } catch {
-        /* noop */
-      }
-    }, POLL_INTERVAL);
+  function calculateBackoffInterval(failures) {
+    const interval = INITIAL_POLL_INTERVAL * Math.pow(BACKOFF_MULTIPLIER, failures);
+    return Math.min(interval, MAX_BACKOFF_INTERVAL);
   }
 
   /**
-   * Fallback: Server-Sent Events mode
+   * Stop all live reload activity
    */
-  function startSSE(state, urls) {
-    if (!urls.sse || state.channel === 'sse' || typeof EventSource === 'undefined') {
-      startPolling(state, urls.poll);
+  function stopLiveReload(state, reason) {
+    state.stopped = true;
+    if (state.pollTimer) {
+      clearTimeout(state.pollTimer);
+      state.pollTimer = null;
+    }
+    // Only log once when stopping
+    if (!state.stoppedLogged) {
+      state.stoppedLogged = true;
+      console.info(
+        `[live-reload] ${reason} Live reload disabled. Refresh the page after restarting the dev server.`
+      );
+    }
+  }
+
+  /**
+   * Silent fetch that suppresses network errors from appearing in console
+   */
+  async function silentFetch(url, options) {
+    try {
+      return await fetch(url, options);
+    } catch {
+      // Silently swallow network errors to prevent console spam
+      return null;
+    }
+  }
+
+  /**
+   * Fallback: Polling mode with exponential backoff
+   */
+  function startPolling(state, pollUrl) {
+    if (!pollUrl) {
+      stopLiveReload(state, 'No poll URL available.');
       return;
     }
-    try {
-      warnLog('fallback to SSE mode');
-      const source = new EventSource(urls.sse);
-      state.channel = 'sse';
-      source.onmessage = (event) => {
+    if (state.stopped) return;
+    if (state.pollingActive) return; // Prevent multiple polling loops
+
+    warnLog('fallback to polling mode');
+    state.channel = 'poll';
+    state.pollingActive = true;
+
+    async function poll() {
+      if (state.stopped) return;
+
+      const resp = await silentFetch(pollUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'omit',
+      });
+
+      if (resp && resp.ok) {
+        // Success - reset failure counter and use normal interval
+        state.consecutiveFailures = 0;
         try {
-          const data = JSON.parse(event.data || '{}');
+          const data = await resp.json();
           handleTimestamp(state, data?.ts);
         } catch {
-          /* noop */
+          /* ignore parse errors */
         }
-      };
-      source.onerror = () => {
-        try {
-          source.close();
-        } catch {
-          /* noop */
+        if (!state.stopped) {
+          state.pollTimer = setTimeout(poll, INITIAL_POLL_INTERVAL);
         }
-        startPolling(state, urls.poll);
-      };
-    } catch (error) {
-      warnLog('SSE init error:', error?.message || error);
-      startPolling(state, urls.poll);
+      } else {
+        // Connection failed or no response - apply backoff
+        state.consecutiveFailures += 1;
+
+        if (state.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          stopLiveReload(
+            state,
+            `Dev server offline (${state.consecutiveFailures} failed attempts).`
+          );
+          return;
+        }
+
+        // Schedule next poll with exponential backoff
+        const nextInterval = calculateBackoffInterval(state.consecutiveFailures);
+        debugLog(
+          `Poll failed (${state.consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}), ` +
+            `next retry in ${Math.round(nextInterval / 1000)}s`
+        );
+
+        if (!state.stopped) {
+          state.pollTimer = setTimeout(poll, nextInterval);
+        }
+      }
     }
+
+    // Start polling
+    poll();
   }
 
   /**
    * Primary mode: WebSocket connection
+   * Note: We skip SSE entirely because EventSource has auto-reconnect behavior
+   * that cannot be disabled and causes console spam when server is down.
    */
   function startWebSocket(state, urls) {
+    if (state.stopped) return;
     if (!urls.ws) {
       warnLog('Unable to infer WebSocket endpoint');
-      startSSE(state, urls);
+      startPolling(state, urls.poll);
       return;
     }
     debugLog('connect ->', urls.ws);
     let attempts = 0;
 
     function connect() {
+      if (state.stopped) return;
       attempts += 1;
       try {
         const ws = new WebSocket(urls.ws);
@@ -199,6 +251,7 @@
         ws.onopen = () => {
           debugLog('WebSocket connected');
           attempts = 0;
+          state.consecutiveFailures = 0; // Reset global failure count on success
         };
 
         ws.onmessage = (event) => {
@@ -212,13 +265,18 @@
 
         const handleClose = () => {
           if (state.channel !== 'ws') return;
+          if (state.stopped) return;
           try {
             ws.close();
           } catch {
             /* noop */
           }
+
+          state.consecutiveFailures += 1;
+
           if (attempts >= MAX_WS_ATTEMPTS) {
-            startSSE(state, urls);
+            // Fallback directly to polling (skip SSE)
+            startPolling(state, urls.poll);
             return;
           }
           warnLog('WebSocket closed, retrying...');
@@ -228,8 +286,9 @@
         ws.onclose = handleClose;
         ws.onerror = handleClose;
       } catch (error) {
+        state.consecutiveFailures += 1;
         if (attempts >= MAX_WS_ATTEMPTS) {
-          startSSE(state, urls);
+          startPolling(state, urls.poll);
           return;
         }
         warnLog('connect error, retrying:', error?.message || error);
@@ -247,6 +306,10 @@
     last: 0,
     reloading: false,
     pollTimer: null,
+    consecutiveFailures: 0,
+    stopped: false,
+    stoppedLogged: false,
+    pollingActive: false,
   };
 
   startWebSocket(state, urls);
