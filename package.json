@@ -6,12 +6,6 @@
   "scripts": {
     "check": "biome check --write",
     "format": "biome format --write",
-    "fix-cert": "node logistics/plugin-deploy/fix-cert.js",
-    "dev": "node logistics/plugin-deploy/vite/dev.js",
-    "build": "node logistics/plugin-deploy/vite/build.js",
-    "build:dev": "node logistics/plugin-deploy/vite/build.js --dev",
-    "upload:dev": "node logistics/plugin-deploy/upload-dev.js",
-    "upload:prod": "node logistics/plugin-deploy/upload-prod.js",
     "dev:custom": "node logistics/customization-deploy/vite/build.js --watch",
     "build:custom": "node logistics/customization-deploy/vite/build.js",
     "upload:custom:dev": "node logistics/customization-deploy/upload-dev.js",

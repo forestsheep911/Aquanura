@@ -1,5 +1,4 @@
 packages:
-  - plugin
   - customization
   - logistics/**
 
