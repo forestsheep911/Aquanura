@@ -1,0 +1,14 @@
+{
+    "app": "YOUR_APP_ID",
+    "scope": "ALL",
+    "desktop": {
+        "js": [
+            "customization/dist/index.js"
+        ],
+        "css": []
+    },
+    "mobile": {
+        "js": [],
+        "css": []
+    }
+}
