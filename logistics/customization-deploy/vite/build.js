@@ -10,7 +10,7 @@ async function createReactPlugin() {
         throw new TypeError('Invalid @vitejs/plugin-react export: expected a default function.');
     }
     return react({
-        jsxRuntime: 'classic',
+        jsxRuntime: 'automatic',
         include: [/\.(jsx|tsx|js)$/],
     });
 }
@@ -19,7 +19,7 @@ async function createReactPlugin() {
     const rootDir = path.resolve(__dirname, '../../../');
     const customDir = path.join(rootDir, 'customization');
     const outDir = path.join(customDir, 'dist');
-    const entry = path.join(customDir, 'src/index.ts');
+    const entry = path.join(customDir, 'src/index.tsx');
 
     if (!fs.existsSync(entry)) {
         console.error(`Entry file not found: ${entry}`);
@@ -61,34 +61,38 @@ async function createReactPlugin() {
 
     await fs.emptyDir(outDir);
 
-    await build({
-        root: customDir,
-        plugins: plugins,
-        build: {
-            watch: isWatch ? {} : null,
-            outDir,
-            emptyOutDir: true,
-            cssCodeSplit: isSeparateCss, // If false, vite tries to inline or put in one file? 
-            // Actually `cssCodeSplit` true means "keep CSS separate from JS". 
-            // If we use the injection plugin, it takes that CSS and puts it in JS.
-            // So we generally leave cssCodeSplit default (true), and let the plugin handle the valid output.
-
-            rollupOptions: {
-                input: entry,
-                output: {
-                    format: 'iife',
-                    entryFileNames: 'index.js',
-                    assetFileNames: (assetInfo) => {
-                        if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-                            return 'style.css';
-                        }
-                        return 'assets/[name][extname]';
-                    },
-                    name: 'MyCustomization',
+    try {
+        await build({
+            root: customDir,
+            plugins: plugins,
+            build: {
+                watch: isWatch ? {} : null,
+                outDir,
+                emptyOutDir: true,
+                cssCodeSplit: isSeparateCss,
+                rollupOptions: {
+                    input: entry,
+                    output: {
+                        format: 'iife',
+                        entryFileNames: 'index.js',
+                        assetFileNames: (assetInfo) => {
+                            if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+                                return 'style.css';
+                            }
+                            return 'assets/[name][extname]';
+                        },
+                        name: 'MyCustomization',
+                    }
                 }
             }
+        });
+    } catch (e) {
+        console.error('Build failed:', e);
+        if (e.errors) {
+            console.error('Esbuild errors:', JSON.stringify(e.errors, null, 2));
         }
-    });
+        process.exit(1);
+    }
 
     console.log('Build complete.');
 })();

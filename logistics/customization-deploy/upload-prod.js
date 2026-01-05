@@ -14,14 +14,14 @@ const MANIFEST_TEMPLATE = path.join(__dirname, 'customize-manifest.json');
 const TEMP_MANIFEST = path.join(__dirname, 'customize-manifest.prod.json');
 
 (async () => {
-    const baseUrl = process.env.KINTONE_BASE_URL;
-    const username = process.env.KINTONE_USERNAME;
-    const password = process.env.KINTONE_PASSWORD;
+    const baseUrl = process.env.KINTONE_BASE_URL_PROD || process.env.KINTONE_BASE_URL;
+    const username = process.env.KINTONE_USERNAME_PROD || process.env.KINTONE_USERNAME;
+    const password = process.env.KINTONE_PASSWORD_PROD || process.env.KINTONE_PASSWORD;
     const appId = process.env.KINTONE_CUSTOMIZATION_APP_ID_PROD;
 
     if (!baseUrl || !username || !password || !appId) {
         console.error(chalk.red('Missing required environment variables.'));
-        console.error('Ensure KINTONE_BASE_URL, KINTONE_USERNAME, KINTONE_PASSWORD, and KINTONE_CUSTOMIZATION_APP_ID_PROD are set in .env');
+        console.error('Ensure KINTONE_BASE_URL_PROD, KINTONE_USERNAME_PROD, KINTONE_PASSWORD_PROD, and KINTONE_CUSTOMIZATION_APP_ID_PROD are set in .env');
         process.exit(1);
     }
 
