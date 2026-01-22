@@ -1,0 +1,247 @@
+/*
+ * Tailwind v4 CSS-first 配置
+ * 禁用全局 preflight，仅在插件容器内进行 reset
+ */
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+
+@source "../**/*.{ts,tsx,js,jsx,html}";
+@source "../node_modules/@tremor/react/dist/**/*.js";
+@source "./tremor-safelist.js";
+
+@utility bg-tremor-background { background-color: var(--tremor-background); }
+@utility bg-tremor-background-subtle { background-color: var(--tremor-background-subtle); }
+@utility bg-tremor-background-muted { background-color: var(--tremor-background-muted); }
+@utility bg-tremor-background-emphasis { background-color: var(--tremor-background-emphasis); }
+@utility bg-tremor-brand { background-color: var(--tremor-brand); }
+@utility bg-tremor-brand-muted { background-color: var(--tremor-brand-muted); }
+@utility bg-tremor-brand-faint { background-color: var(--tremor-brand-faint); }
+@utility bg-tremor-brand-emphasis { background-color: var(--tremor-brand-emphasis); }
+@utility bg-tremor-accent { background-color: var(--tremor-accent); }
+
+@utility text-tremor-content { color: var(--tremor-content); }
+@utility text-tremor-content-strong { color: var(--tremor-content-strong); }
+@utility text-tremor-content-emphasis { color: var(--tremor-content-emphasis); }
+@utility text-tremor-content-subtle { color: var(--tremor-content-subtle); }
+@utility text-tremor-brand { color: var(--tremor-brand); }
+@utility text-tremor-brand-emphasis { color: var(--tremor-brand-emphasis); }
+@utility text-tremor-brand-inverted { color: var(--tremor-brand-inverted); }
+
+@utility border-tremor-border { border-color: var(--tremor-border); }
+@utility ring-tremor-ring { --tw-ring-color: var(--tremor-ring); }
+
+@utility bg-dark-tremor-background { background-color: var(--dark-tremor-background); }
+@utility bg-dark-tremor-background-subtle { background-color: var(--dark-tremor-background-subtle); }
+@utility bg-dark-tremor-background-muted { background-color: var(--dark-tremor-background-muted); }
+@utility bg-dark-tremor-background-emphasis { background-color: var(--dark-tremor-background-emphasis); }
+@utility bg-dark-tremor-brand { background-color: var(--dark-tremor-brand); }
+@utility bg-dark-tremor-brand-muted { background-color: var(--dark-tremor-brand-muted); }
+@utility bg-dark-tremor-brand-faint { background-color: var(--dark-tremor-brand-faint); }
+@utility bg-dark-tremor-brand-emphasis { background-color: var(--dark-tremor-brand-emphasis); }
+@utility bg-dark-tremor-accent { background-color: var(--dark-tremor-accent); }
+
+@utility text-dark-tremor-content { color: var(--dark-tremor-content); }
+@utility text-dark-tremor-content-strong { color: var(--dark-tremor-content-strong); }
+@utility text-dark-tremor-content-emphasis { color: var(--dark-tremor-content-emphasis); }
+@utility text-dark-tremor-content-subtle { color: var(--dark-tremor-content-subtle); }
+@utility text-dark-tremor-brand { color: var(--dark-tremor-brand); }
+@utility text-dark-tremor-brand-emphasis { color: var(--dark-tremor-brand-emphasis); }
+@utility text-dark-tremor-brand-inverted { color: var(--dark-tremor-brand-inverted); }
+
+@utility border-dark-tremor-border { border-color: var(--dark-tremor-border); }
+@utility ring-dark-tremor-ring { --tw-ring-color: var(--dark-tremor-ring); }
+
+@utility rounded-tremor-small { border-radius: var(--radius-tremor-small); }
+@utility rounded-tremor-default { border-radius: var(--radius-tremor-default); }
+@utility rounded-tremor-full { border-radius: var(--radius-tremor-full); }
+
+@utility shadow-tremor-card { box-shadow: var(--shadow-tremor-card); }
+@utility shadow-dark-tremor-card { box-shadow: var(--shadow-dark-tremor-card); }
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-tremor-background: var(--tremor-background);
+  --color-tremor-background-subtle: var(--tremor-background-subtle);
+  --color-tremor-background-muted: var(--tremor-background-muted);
+  --color-tremor-background-emphasis: var(--tremor-background-emphasis);
+  --color-tremor-border: var(--tremor-border);
+  --color-tremor-ring: var(--tremor-ring);
+  --color-tremor-content: var(--tremor-content);
+  --color-tremor-content-strong: var(--tremor-content-strong);
+  --color-tremor-content-emphasis: var(--tremor-content-emphasis);
+  --color-tremor-content-subtle: var(--tremor-content-subtle);
+  --color-tremor-brand: var(--tremor-brand);
+  --color-tremor-brand-muted: var(--tremor-brand-muted);
+  --color-tremor-brand-faint: var(--tremor-brand-faint);
+  --color-tremor-brand-emphasis: var(--tremor-brand-emphasis);
+  --color-tremor-brand-inverted: var(--tremor-brand-inverted);
+  --color-tremor-accent: var(--tremor-accent);
+  --color-dark-tremor-background: var(--dark-tremor-background);
+  --color-dark-tremor-background-subtle: var(--dark-tremor-background-subtle);
+  --color-dark-tremor-background-muted: var(--dark-tremor-background-muted);
+  --color-dark-tremor-background-emphasis: var(--dark-tremor-background-emphasis);
+  --color-dark-tremor-border: var(--dark-tremor-border);
+  --color-dark-tremor-ring: var(--dark-tremor-ring);
+  --color-dark-tremor-content: var(--dark-tremor-content);
+  --color-dark-tremor-content-strong: var(--dark-tremor-content-strong);
+  --color-dark-tremor-content-emphasis: var(--dark-tremor-content-emphasis);
+  --color-dark-tremor-content-subtle: var(--dark-tremor-content-subtle);
+  --color-dark-tremor-brand: var(--dark-tremor-brand);
+  --color-dark-tremor-brand-muted: var(--dark-tremor-brand-muted);
+  --color-dark-tremor-brand-faint: var(--dark-tremor-brand-faint);
+  --color-dark-tremor-brand-emphasis: var(--dark-tremor-brand-emphasis);
+  --color-dark-tremor-brand-inverted: var(--dark-tremor-brand-inverted);
+  --color-dark-tremor-accent: var(--dark-tremor-accent);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-tremor-small: 0.375rem;
+  --radius-tremor-default: 0.5rem;
+  --radius-tremor-full: 9999px;
+  --shadow-tremor-card: 0 1px 2px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-dark-tremor-card: 0 1px 2px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+#aquanura-config-root,
+#aquanura-desktop-root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0.017 285.823);
+  --muted: oklch(0.97 0.003 264.542);
+  --muted-foreground: oklch(0.556 0.013 285.938);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.017 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.017 285.823);
+  --border: oklch(0.922 0.006 264.531);
+  --input: oklch(0.922 0.006 264.531);
+  --primary: oklch(0.205 0.015 285.82);
+  --primary-foreground: oklch(0.985 0.001 264.539);
+  --secondary: oklch(0.97 0.003 264.542);
+  --secondary-foreground: oklch(0.205 0.015 285.82);
+  --accent: oklch(0.97 0.003 264.542);
+  --accent-foreground: oklch(0.205 0.015 285.82);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0.001 264.539);
+  --ring: oklch(0.708 0.013 285.823);
+  --radius: 0.75rem;
+  --tremor-background: var(--background);
+  --tremor-background-subtle: var(--muted);
+  --tremor-background-muted: oklch(0.94 0.005 264.5);
+  --tremor-background-emphasis: oklch(0.22 0.02 285.8);
+  --tremor-border: var(--border);
+  --tremor-ring: var(--ring);
+  --tremor-content: var(--foreground);
+  --tremor-content-strong: oklch(0.17 0.02 285.8);
+  --tremor-content-emphasis: oklch(0.25 0.02 285.8);
+  --tremor-content-subtle: var(--muted-foreground);
+  --tremor-brand: oklch(0.62 0.18 264);
+  --tremor-brand-muted: oklch(0.85 0.07 264);
+  --tremor-brand-faint: oklch(0.95 0.03 264);
+  --tremor-brand-emphasis: oklch(0.52 0.2 264);
+  --tremor-brand-inverted: oklch(1 0 0);
+  --tremor-accent: oklch(0.65 0.16 160);
+}
+
+#aquanura-config-root.dark,
+#aquanura-desktop-root.dark {
+  --background: oklch(0.145 0.017 285.823);
+  --foreground: oklch(0.985 0.001 264.539);
+  --muted: oklch(0.269 0.013 285.838);
+  --muted-foreground: oklch(0.708 0.013 285.823);
+  --popover: oklch(0.145 0.017 285.823);
+  --popover-foreground: oklch(0.985 0.001 264.539);
+  --card: oklch(0.145 0.017 285.823);
+  --card-foreground: oklch(0.985 0.001 264.539);
+  --border: oklch(0.269 0.013 285.838);
+  --input: oklch(0.269 0.013 285.838);
+  --primary: oklch(0.985 0.001 264.539);
+  --primary-foreground: oklch(0.205 0.015 285.82);
+  --secondary: oklch(0.269 0.013 285.838);
+  --secondary-foreground: oklch(0.985 0.001 264.539);
+  --accent: oklch(0.269 0.013 285.838);
+  --accent-foreground: oklch(0.985 0.001 264.539);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.985 0.001 264.539);
+  --ring: oklch(0.439 0.01 285.823);
+  --dark-tremor-background: oklch(0.18 0.02 285.8);
+  --dark-tremor-background-subtle: oklch(0.22 0.02 285.8);
+  --dark-tremor-background-muted: oklch(0.28 0.02 285.8);
+  --dark-tremor-background-emphasis: oklch(0.9 0.01 264.5);
+  --dark-tremor-border: oklch(0.3 0.01 285.8);
+  --dark-tremor-ring: oklch(0.5 0.02 285.8);
+  --dark-tremor-content: oklch(0.9 0.01 264.5);
+  --dark-tremor-content-strong: oklch(0.98 0.01 264.5);
+  --dark-tremor-content-emphasis: oklch(0.95 0.01 264.5);
+  --dark-tremor-content-subtle: oklch(0.7 0.01 264.5);
+  --dark-tremor-brand: oklch(0.75 0.18 264);
+  --dark-tremor-brand-muted: oklch(0.4 0.08 264);
+  --dark-tremor-brand-faint: oklch(0.3 0.04 264);
+  --dark-tremor-brand-emphasis: oklch(0.85 0.18 264);
+  --dark-tremor-brand-inverted: oklch(0.18 0.02 285.8);
+  --dark-tremor-accent: oklch(0.7 0.15 160);
+}
+
+@layer base {
+  #aquanura-config-root *,
+  #aquanura-config-root *::before,
+  #aquanura-config-root *::after,
+  #aquanura-desktop-root *,
+  #aquanura-desktop-root *::before,
+  #aquanura-desktop-root *::after {
+    border-color: var(--border);
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+  }
+
+  #aquanura-config-root,
+  #aquanura-desktop-root {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  #aquanura-config-root button,
+  #aquanura-desktop-root button {
+    background-color: transparent;
+    background-image: none;
+    text-transform: none;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  #aquanura-config-root input,
+  #aquanura-config-root textarea,
+  #aquanura-desktop-root input,
+  #aquanura-desktop-root textarea {
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    box-shadow: none;
+  }
+}

@@ -1,0 +1,199 @@
+@import "../../styles/tailwind.css";
+
+@layer base {
+  #aquanura-config-root,
+  #aquanura-desktop-root {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .text-tremor-default {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .text-tremor-title {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .text-tremor-metric {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 600;
+  }
+}
+
+#aquanura-config-root .bg-tremor-background,
+#aquanura-desktop-root .bg-tremor-background {
+  background-color: var(--tremor-background);
+}
+#aquanura-config-root .bg-tremor-background-subtle,
+#aquanura-desktop-root .bg-tremor-background-subtle {
+  background-color: var(--tremor-background-subtle);
+}
+#aquanura-config-root .bg-tremor-background-muted,
+#aquanura-desktop-root .bg-tremor-background-muted {
+  background-color: var(--tremor-background-muted);
+}
+#aquanura-config-root .bg-tremor-background-emphasis,
+#aquanura-desktop-root .bg-tremor-background-emphasis {
+  background-color: var(--tremor-background-emphasis);
+}
+#aquanura-config-root .bg-tremor-brand,
+#aquanura-desktop-root .bg-tremor-brand {
+  background-color: var(--tremor-brand);
+}
+#aquanura-config-root .bg-tremor-brand-muted,
+#aquanura-desktop-root .bg-tremor-brand-muted {
+  background-color: var(--tremor-brand-muted);
+}
+#aquanura-config-root .bg-tremor-brand-faint,
+#aquanura-desktop-root .bg-tremor-brand-faint {
+  background-color: var(--tremor-brand-faint);
+}
+#aquanura-config-root .bg-tremor-brand-emphasis,
+#aquanura-desktop-root .bg-tremor-brand-emphasis {
+  background-color: var(--tremor-brand-emphasis);
+}
+#aquanura-config-root .bg-tremor-accent,
+#aquanura-desktop-root .bg-tremor-accent {
+  background-color: var(--tremor-accent);
+}
+
+#aquanura-config-root .text-tremor-content,
+#aquanura-desktop-root .text-tremor-content {
+  color: var(--tremor-content);
+}
+#aquanura-config-root .text-tremor-content-strong,
+#aquanura-desktop-root .text-tremor-content-strong {
+  color: var(--tremor-content-strong);
+}
+#aquanura-config-root .text-tremor-content-emphasis,
+#aquanura-desktop-root .text-tremor-content-emphasis {
+  color: var(--tremor-content-emphasis);
+}
+#aquanura-config-root .text-tremor-content-subtle,
+#aquanura-desktop-root .text-tremor-content-subtle {
+  color: var(--tremor-content-subtle);
+}
+#aquanura-config-root .text-tremor-brand,
+#aquanura-desktop-root .text-tremor-brand {
+  color: var(--tremor-brand);
+}
+#aquanura-config-root .text-tremor-brand-emphasis,
+#aquanura-desktop-root .text-tremor-brand-emphasis {
+  color: var(--tremor-brand-emphasis);
+}
+#aquanura-config-root .text-tremor-brand-inverted,
+#aquanura-desktop-root .text-tremor-brand-inverted {
+  color: var(--tremor-brand-inverted);
+}
+
+#aquanura-config-root .border-tremor-border,
+#aquanura-desktop-root .border-tremor-border {
+  border-color: var(--tremor-border);
+}
+#aquanura-config-root .ring-tremor-ring,
+#aquanura-desktop-root .ring-tremor-ring {
+  --tw-ring-color: var(--tremor-ring);
+}
+
+#aquanura-config-root .rounded-tremor-small,
+#aquanura-desktop-root .rounded-tremor-small {
+  border-radius: var(--radius-tremor-small);
+}
+#aquanura-config-root .rounded-tremor-default,
+#aquanura-desktop-root .rounded-tremor-default {
+  border-radius: var(--radius-tremor-default);
+}
+#aquanura-config-root .rounded-tremor-full,
+#aquanura-desktop-root .rounded-tremor-full {
+  border-radius: var(--radius-tremor-full);
+}
+#aquanura-config-root .shadow-tremor-card,
+#aquanura-desktop-root .shadow-tremor-card {
+  box-shadow: var(--shadow-tremor-card);
+}
+
+#aquanura-config-root.dark .bg-dark-tremor-background,
+#aquanura-desktop-root.dark .bg-dark-tremor-background {
+  background-color: var(--dark-tremor-background);
+}
+#aquanura-config-root.dark .bg-dark-tremor-background-subtle,
+#aquanura-desktop-root.dark .bg-dark-tremor-background-subtle {
+  background-color: var(--dark-tremor-background-subtle);
+}
+#aquanura-config-root.dark .bg-dark-tremor-background-muted,
+#aquanura-desktop-root.dark .bg-dark-tremor-background-muted {
+  background-color: var(--dark-tremor-background-muted);
+}
+#aquanura-config-root.dark .bg-dark-tremor-background-emphasis,
+#aquanura-desktop-root.dark .bg-dark-tremor-background-emphasis {
+  background-color: var(--dark-tremor-background-emphasis);
+}
+#aquanura-config-root.dark .bg-dark-tremor-brand,
+#aquanura-desktop-root.dark .bg-dark-tremor-brand {
+  background-color: var(--dark-tremor-brand);
+}
+#aquanura-config-root.dark .bg-dark-tremor-brand-muted,
+#aquanura-desktop-root.dark .bg-dark-tremor-brand-muted {
+  background-color: var(--dark-tremor-brand-muted);
+}
+#aquanura-config-root.dark .bg-dark-tremor-brand-faint,
+#aquanura-desktop-root.dark .bg-dark-tremor-brand-faint {
+  background-color: var(--dark-tremor-brand-faint);
+}
+#aquanura-config-root.dark .bg-dark-tremor-brand-emphasis,
+#aquanura-desktop-root.dark .bg-dark-tremor-brand-emphasis {
+  background-color: var(--dark-tremor-brand-emphasis);
+}
+#aquanura-config-root.dark .bg-dark-tremor-accent,
+#aquanura-desktop-root.dark .bg-dark-tremor-accent {
+  background-color: var(--dark-tremor-accent);
+}
+
+#aquanura-config-root.dark .text-dark-tremor-content,
+#aquanura-desktop-root.dark .text-dark-tremor-content {
+  color: var(--dark-tremor-content);
+}
+#aquanura-config-root.dark .text-dark-tremor-content-strong,
+#aquanura-desktop-root.dark .text-dark-tremor-content-strong {
+  color: var(--dark-tremor-content-strong);
+}
+#aquanura-config-root.dark .text-dark-tremor-content-emphasis,
+#aquanura-desktop-root.dark .text-dark-tremor-content-emphasis {
+  color: var(--dark-tremor-content-emphasis);
+}
+#aquanura-config-root.dark .text-dark-tremor-content-subtle,
+#aquanura-desktop-root.dark .text-dark-tremor-content-subtle {
+  color: var(--dark-tremor-content-subtle);
+}
+#aquanura-config-root.dark .text-dark-tremor-brand,
+#aquanura-desktop-root.dark .text-dark-tremor-brand {
+  color: var(--dark-tremor-brand);
+}
+#aquanura-config-root.dark .text-dark-tremor-brand-emphasis,
+#aquanura-desktop-root.dark .text-dark-tremor-brand-emphasis {
+  color: var(--dark-tremor-brand-emphasis);
+}
+#aquanura-config-root.dark .text-dark-tremor-brand-inverted,
+#aquanura-desktop-root.dark .text-dark-tremor-brand-inverted {
+  color: var(--dark-tremor-brand-inverted);
+}
+
+#aquanura-config-root.dark .border-dark-tremor-border,
+#aquanura-desktop-root.dark .border-dark-tremor-border {
+  border-color: var(--dark-tremor-border);
+}
+#aquanura-config-root.dark .ring-dark-tremor-ring,
+#aquanura-desktop-root.dark .ring-dark-tremor-ring {
+  --tw-ring-color: var(--dark-tremor-ring);
+}
+#aquanura-config-root.dark .shadow-dark-tremor-card,
+#aquanura-desktop-root.dark .shadow-dark-tremor-card {
+  box-shadow: var(--shadow-dark-tremor-card);
+}

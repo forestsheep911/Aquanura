@@ -122,7 +122,7 @@ const forceJsxPlugin = {
 
   const esbuildOptions = {
     loader: 'jsx',
-    include: /\.js$/,
+    include: /\.(js|jsx)$/,
     exclude: [],
   };
 

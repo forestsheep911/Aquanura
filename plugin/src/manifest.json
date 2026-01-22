@@ -31,16 +31,16 @@
   },
   "icon": "image/icon.png",
   "desktop": {
-    "js": ["dev/live-reload.js", "log/logger.js", "logic/desktop/desktop.js"],
-    "css": ["css/desktop.css"]
+    "js": ["dev/live-reload.js", "log/logger.js", "ui/desktop/index.jsx"],
+    "css": []
   },
   "mobile": {
-    "js": ["dev/live-reload.js", "log/logger.js", "logic/desktop/desktop.js"],
-    "css": ["css/desktop.css"]
+    "js": ["dev/live-reload.js", "log/logger.js", "ui/desktop/index.jsx"],
+    "css": []
   },
   "config": {
     "html": "html/config.html",
-    "js": ["dev/live-reload.js", "log/logger.js", "logic/config/config.js"],
-    "css": ["css/config.css"]
+    "js": ["dev/live-reload.js", "log/logger.js", "ui/config/index.jsx"],
+    "css": []
   }
 }

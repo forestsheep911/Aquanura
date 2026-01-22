@@ -581,7 +581,7 @@ Environment Variables:
       : undefined,
     esbuild: {
       loader: 'jsx',
-      include: /\.js$/,
+      include: /\.(js|jsx)$/,
       exclude: [],
     },
     optimizeDeps: {
@@ -756,7 +756,7 @@ Environment Variables:
         logLevel: process.env.VITE_LOG_LEVEL || (QUIET ? 'silent' : 'error'),
         esbuild: {
           loader: 'jsx',
-          include: /\.js$/,
+          include: /\.(js|jsx)$/,
           exclude: [],
         },
         define: {
