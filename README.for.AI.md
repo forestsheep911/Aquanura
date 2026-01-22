@@ -8,7 +8,7 @@
 - **Workspace**: pnpm monorepo with three packages—root tooling, `plugin/` (actual plugin), and `logistics/plugin-deploy/` (toolchain).
 - **Command surface**: Always run scripts from the repo root. Root `package.json` proxies everything into `kintone-plugin-deploy`.
 - **Secrets**: `plugin/private.ppk` and any `.env` files must never be committed. Copilots must keep them private and avoid printing them.
-- **Debug artifacts**: `logistics/log/dev.log` (JSONL) + browser console; both are key to AI troubleshooting.
+- **Debug artifacts**: `log/dev.log` (JSONL) + browser console; both are key to AI troubleshooting.
 
 | Topic | Entry point | Notes |
 | --- | --- | --- |
@@ -16,7 +16,7 @@
 | Build & sign | `pnpm build` | Runs `vite/build.js` → bundles, strips dev code, signs, outputs `plugin/dist/plugin.zip` |
 | Upload | `pnpm upload:dev` / `pnpm upload:prod` | Uses `.env` Kintone credentials (sys-admin username/password) |
 | Certificates | `pnpm fix-cert` | Rebuilds root CA, trusts it, cleans leftovers |
-| Logs | `logistics/log/dev.log` | Dev server writes JSON lines via `/__devlog` endpoint |
+| Logs | `log/dev.log` | Dev server writes JSON lines via `/__devlog` endpoint |
 | Manifest | `plugin/src/manifest.json` | Declares JS/CSS entries, config page assets, multilingual strings |
 
 ## 2. Repository Anatomy
@@ -28,7 +28,7 @@
 | `logistics/plugin-deploy/` | Build & deploy tooling | `vite/` scripts, `upload-*.js`, `fix-cert.js`, `.env(.example)` |
 | `logistics/plugin-deploy/toolkit/` | Shared helpers | `cert/`, `plugin/` (signing/zip/badge), `kintone/` (REST client), `runtime/` utilities |
 | `docs/` | Human-facing docs | DEVELOPMENT / DEPLOYMENT / CERTIFICATE / I18N / LOG_SYSTEM / TROUBLESHOOTING |
-| `logistics/log/` | Runtime logs | Default `dev.log`; can be redirected via env |
+| `log/` | Runtime logs | Default `dev.log`; can be redirected via env |
 | `quotes/`, `scripts/` | Ancillary resources | Not part of the main build, consult when needed |
 
 ## 3. Toolchain, Packages & Scripts
@@ -61,7 +61,7 @@
 
 ## 4. Configuration Surfaces
 
-### 4.1 `.env` (`logistics/plugin-deploy/.env`)
+### 4.1 `.env` (project root)
 
 Copy from `.env.example`. Key groups:
 
@@ -94,7 +94,7 @@ Whenever a new variable is introduced, update both `.env.example` and relevant d
 1. Load env via `loadEnv(resolveEnvFilePath('.env'))`
 2. Resolve repo root, plugin root, dist dir, manifest path
 3. Initialize logging:
-   - Determine `DEV_LOG_DIR` (default `logistics/log`)
+   - Determine `DEV_LOG_DIR` (default `log`)
    - Ensure directory, set `dev.log`, queue writes to avoid contention
 4. Configure Vite:
    - Apply `force-jsx-loader` so `.js` can contain JSX
@@ -203,10 +203,10 @@ Typical assistant tasks:
   ```json
   {"ts":"2025-01-01T12:00:00.000Z","level":"INFO","message":"...", "pluginId":"xxx"}
   ```
-- File: `logistics/log/dev.log` (override via `DEV_LOG_DIR`)
+- File: `log/dev.log` (override via `DEV_LOG_DIR`)
 - Consumption patterns:
-  - `tail -f logistics/log/dev.log`
-  - `rg '"level":"ERROR"' logistics/log/dev.log`
+  - `tail -f log/dev.log`
+  - `rg '"level":"ERROR"' log/dev.log`
   - AI parsing JSONL directly
 
 Troubleshooting workflow for assistants:
@@ -250,7 +250,7 @@ Troubleshooting workflow for assistants:
 
 ## 12. Observability & Troubleshooting Hooks
 
-- `logistics/log/dev.log`: main structured log
+- `log/dev.log`: main structured log
 - `pnpm dev` console: minimal by default; set `QUIET=false` to increase verbosity
 - Browser console: verify `PluginLogger` presence, HTTP errors, DOM issues
 - `docs/TROUBLESHOOTING.md`: catalog of certificate, HMR, build, upload fixes

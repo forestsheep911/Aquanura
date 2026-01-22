@@ -133,7 +133,7 @@
   // Show a friendly tip about local file logging in development mode
   if (isDev) {
     console.log(
-      '%c💡 Tip: Logs are being saved to local file (logistics/log/dev.log). ' +
+      '%c💡 Tip: Logs are being saved to local file (log/dev.log). ' +
         'Consider reducing console output and reviewing the log file for a cleaner debugging experience.',
       'color: #4CAF50; font-style: italic;'
     );

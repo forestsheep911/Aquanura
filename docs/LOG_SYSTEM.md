@@ -9,7 +9,7 @@ The logging system writes to local JSONL (JSON Lines) files, making it easy for 
 ### Key Features
 
 - **Local JSONL logging** - One JSON object per line
-- **Real-time writing** - Logs appear immediately in `logistics/log/dev.log`
+- **Real-time writing** - Logs appear immediately in `log/dev.log`
 - **AI-friendly format** - Easy for AI to parse and analyze
 - **Development only** - Automatically disabled in production builds
 
@@ -17,7 +17,7 @@ The logging system writes to local JSONL (JSON Lines) files, making it easy for 
 
 ### Enable Logging
 
-In `logistics/plugin-deploy/.env`:
+In your root `.env`:
 
 ```env
 DEV_LOCAL_LOG_ENABLED=true
@@ -53,10 +53,10 @@ logger.error('Save failed', {
 Get-Content -Tail 20 -Wait logistics\log\dev.log
 
 # Mac/Linux
-tail -f logistics/log/dev.log
+tail -f log/dev.log
 
 # Or just open the file in your editor
-code logistics/log/dev.log
+code log/dev.log
 ```
 
 ## Log Format
@@ -157,7 +157,7 @@ logger.info('Error'); // ❌ Not helpful
 DEV_LOCAL_LOG_ENABLED=true
 
 # Custom log directory (optional)
-DEV_LOG_DIR=logistics/log
+DEV_LOG_DIR=log
 
 ```
 
@@ -167,7 +167,7 @@ The dev server exposes a single HTTP endpoint:
 
 `POST http://localhost:5173/__devlog`
 
-Writes logs to `logistics/log/dev.log`.
+Writes logs to `log/dev.log`.
 
 **Request:**
 ```json
@@ -256,7 +256,7 @@ The JSONL format makes it easy for AI assistants to:
 ### Example AI Workflow
 
 1. You encounter an error in Kintone
-2. AI reads `logistics/log/dev.log`
+2. AI reads `log/dev.log`
 3. AI finds relevant error entries
 4. AI analyzes the context
 5. AI suggests a fix
@@ -291,10 +291,10 @@ For long-running development:
 
 ```bash
 # Archive old logs
-mv logistics/log/dev.log logistics/log/dev.log.old
+mv log/dev.log log/dev.log.old
 
 # Or just delete
-rm logistics/log/dev.log
+rm log/dev.log
 ```
 
 ### Disk Space
@@ -306,7 +306,7 @@ Monitor log file size:
 (Get-Item logistics\log\dev.log).length / 1MB
 
 # Mac/Linux
-du -h logistics/log/dev.log
+du -h log/dev.log
 ```
 
 Clean up regularly during development.
@@ -330,7 +330,7 @@ If you can't write logs:
 icacls logistics\log /grant Everyone:F /T
 
 # Mac/Linux
-chmod -R 755 logistics/log
+chmod -R 755 log
 ```
 
 ### Finding Specific Logs
@@ -339,10 +339,10 @@ Use text search or jq:
 
 ```bash
 # Find all errors
-grep '"level":"ERROR"' logistics/log/dev.log
+grep '"level":"ERROR"' log/dev.log
 
 # Parse with jq
-cat logistics/log/dev.log | jq 'select(.level == "ERROR")'
+cat log/dev.log | jq 'select(.level == "ERROR")'
 ```
 
 ## Next Steps

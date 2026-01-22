@@ -57,9 +57,8 @@ cross-platform behaviour stays correct.
 ## ⚙️ Environment Configuration
 
 ### First Time Setup
-1. Copy environment template:
+1. Copy environment template (from project root):
    ```bash
-   cd logistics/plugin-deploy
    cp .env.example .env
    ```
 
@@ -126,9 +125,9 @@ Development mode supports auto-upload to Kintone:
 ## 📝 Logging Configuration
 
 ### Local Logging (Development)
-- Dev server exposes `POST /__devlog`, appends to `logistics/log/dev.log` in JSON Lines format
+- Dev server exposes `POST /__devlog`, appends to `log/dev.log` in JSON Lines format
 - Enabled only when `NODE_ENV !== 'production'` and `DEV_LOCAL_LOG_ENABLED !== 'false'`
-- Use `DEV_LOG_DIR` to override log directory (default `logistics/log/`)
+- Use `DEV_LOG_DIR` to override log directory (default `log/`)
 
 ### Production Notes
 - Production builds don't write local files

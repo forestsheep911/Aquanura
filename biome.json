@@ -5,6 +5,9 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
+  "organizeImports": {
+    "enabled": true
+  },
   "files": {
     "ignore": [
       "node_modules",
@@ -14,7 +17,7 @@
       "logistics/plugin-deploy/node_modules",
       "**/*.d.ts",
       "**/*.log",
-      "logistics/log/**",
+      "log/**",
       "**/.dev-build/**",
       "**/build.manifest.json",
       "**/temp_icon.png",
@@ -32,11 +35,18 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "style": {
-        "noCommaOperator": "off"
+      "complexity": {
+        "useArrowFunction": "off"
       },
-      "suspicious": {
-        "noAssignInExpressions": "off"
+      "style": {
+        "noParameterAssign": "error",
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error"
       }
     }
   },

@@ -35,7 +35,7 @@ The certificate automatically includes:
 If you need to access the dev server through other domains:
 
 ```env
-# In logistics/plugin-deploy/.env
+# In your root .env
 DEV_HTTPS_DOMAINS=dev.local,192.168.1.100,myapp.test
 ```
 

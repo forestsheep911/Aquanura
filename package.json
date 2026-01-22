@@ -7,13 +7,22 @@
     "check": "biome check --write",
     "format": "biome format --write",
     "fix-cert": "node logistics/plugin-deploy/fix-cert.js",
-    "dev": "node logistics/plugin-deploy/vite/dev.js",
+    "dev": "node --max-old-space-size=4096 logistics/plugin-deploy/vite/dev.js",
     "build": "node logistics/plugin-deploy/vite/build.js",
     "build:dev": "node logistics/plugin-deploy/vite/build.js --dev",
     "upload:dev": "node logistics/plugin-deploy/upload-dev.js",
-    "upload:prod": "node logistics/plugin-deploy/upload-prod.js"
+    "upload:prod": "node logistics/plugin-deploy/upload-prod.js",
+    "deploy:dev": "pnpm run build:dev && pnpm run upload:dev",
+    "deploy:prod": "pnpm run build && pnpm run upload:prod",
+    "deploy:watch": "node logistics/plugin-deploy/vite/deploy-watch.js"
   },
-  "keywords": ["kintone", "plugin", "vite", "template", "hot-reload"],
+  "keywords": [
+    "kintone",
+    "plugin",
+    "vite",
+    "template",
+    "hot-reload"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {

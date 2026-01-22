@@ -12,7 +12,7 @@
 - **Monorepo结构** - 插件代码与工具链清晰分离
 
 ### 📝 AI友好的日志系统
-- **本地JSONL日志** - 日志写入 `logistics/log/dev.log` 供AI分析
+- **本地JSONL日志** - 日志写入 `log/dev.log` 供AI分析
 - **实时日志流** - 实时查看插件运行日志
 - **结构化JSON格式** - 便于人类和AI解析
 
@@ -190,7 +190,7 @@ pnpm upload:prod
 
 ### AI友好的日志
 
-日志以JSONL（JSON Lines）格式写入 `logistics/log/dev.log`：
+日志以JSONL（JSON Lines）格式写入 `log/dev.log`：
 
 ```javascript
 const logger = window.PluginLogger;
@@ -276,7 +276,7 @@ Vite会自动打包所有内容。
 
 - `plugin/private.ppk` - 你的插件私钥
 - `.env` - 包含敏感凭证
-- `logistics/log/*.log` - 可能包含敏感的运行时数据
+- `log/*.log` - 可能包含敏感的运行时数据
 
 这些文件已在 `.gitignore` 中，但提交前请仔细检查！
 

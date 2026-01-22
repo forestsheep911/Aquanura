@@ -51,7 +51,7 @@ When you run `pnpm dev`, the template starts a Vite development server with:
 
 - **HTTPS enabled** - Required for Kintone plugin development
 - **Hot Module Replacement** - Code changes reload instantly
-- **Local logging** - All logs written to `logistics/log/dev.log`
+- **Local logging** - All logs written to `log/dev.log`
 - **Proxy plugin technique** - No need to re-upload after code changes
 
 ### How Hot Reload Works
@@ -110,7 +110,7 @@ logger.info({ action: 'button_click', userId: '123' });
 logger.error('Failed to save', { error: err.message });
 ```
 
-Logs are automatically sent to the dev server and written to `logistics/log/dev.log` in JSONL format.
+Logs are automatically sent to the dev server and written to `log/dev.log` in JSONL format.
 
 ## Customizing the Plugin
 
@@ -173,7 +173,7 @@ This will:
 1. Start dev server: `pnpm dev`
 2. Open your Kintone app
 3. Check browser console for logs
-4. Check `logistics/log/dev.log` for detailed logs
+4. Check `log/dev.log` for detailed logs
 
 ### Integration Testing
 
@@ -188,14 +188,14 @@ Before production release:
 
 ### Check Logs
 
-Logs are in `logistics/log/dev.log`:
+Logs are in `log/dev.log`:
 
 ```bash
 # Windows PowerShell
 Get-Content -Tail 20 -Wait logistics\log\dev.log
 
 # Mac/Linux
-tail -f logistics/log/dev.log
+tail -f log/dev.log
 ```
 
 ### Common Issues

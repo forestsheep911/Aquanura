@@ -32,8 +32,8 @@ build/
 private.ppk
 
 # Logs
-logistics/log/*.log
-logistics/log/*.jsonl
+log/*.log
+log/*.jsonl
 
 # Build outputs
 plugin/dist/

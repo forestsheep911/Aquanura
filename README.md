@@ -14,7 +14,7 @@ A modern, full-featured template for building Kintone plugins with Vite, featuri
 - **Monorepo Structure** - Clean separation of plugin code and tooling
 
 ### 📝 AI-Friendly Logging
-- **Local JSONL Logging** - Logs written to `logistics/log/dev.log` for AI analysis
+- **Local JSONL Logging** - Logs written to `log/dev.log` for AI analysis
 - **Real-time Log Streaming** - Watch logs as your plugin runs
 - **Structured JSON Format** - Easy for both humans and AI to parse
 
@@ -199,7 +199,7 @@ When `DEV_MODE=true`, the plugin icon shows a "D" badge to distinguish developme
 
 ### AI-Friendly Logging
 
-Logs are written in JSONL (JSON Lines) format to `logistics/log/dev.log`:
+Logs are written in JSONL (JSON Lines) format to `log/dev.log`:
 
 ```javascript
 const logger = window.PluginLogger;
@@ -285,7 +285,7 @@ Vite bundles everything automatically.
 
 - `plugin/private.ppk` - Your plugin's private key
 - `.env` - Contains sensitive credentials
-- `logistics/log/*.log` - May contain sensitive runtime data
+- `log/*.log` - May contain sensitive runtime data
 
 These are already in `.gitignore`, but double-check before committing!
 

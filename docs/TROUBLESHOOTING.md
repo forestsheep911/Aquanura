@@ -265,7 +265,7 @@ If upload still fails:
 
 4. **Log directory exists**
    ```bash
-   mkdir -p logistics/log
+   mkdir -p log
    ```
 
 ### Problem: Can't read log file
@@ -279,7 +279,7 @@ icacls logistics\log /grant Everyone:F /T
 **Mac/Linux Permission Issues:**
 
 ```bash
-chmod -R 755 logistics/log
+chmod -R 755 log
 ```
 
 ### Problem: Log file too large
@@ -288,10 +288,10 @@ chmod -R 755 logistics/log
 
 ```bash
 # Archive old logs
-mv logistics/log/dev.log logistics/log/dev.log.old
+mv log/dev.log log/dev.log.old
 
 # Or delete
-rm logistics/log/dev.log
+rm log/dev.log
 ```
 
 ## Plugin Runtime Issues
@@ -328,7 +328,7 @@ rm logistics/log/dev.log
 
 2. **Check logs**
    ```bash
-   tail -f logistics/log/dev.log
+   tail -f log/dev.log
    ```
 
 3. **Verify kintone events**
@@ -459,7 +459,7 @@ if (someValue && someValue.property) {
 
 1. **Check logs**
    - Browser console
-   - `logistics/log/dev.log`
+   - `log/dev.log`
 
 2. **Try clean install**
    ```bash
@@ -493,7 +493,7 @@ cd logistics/plugin-deploy
 cat .env
 
 # Check logs
-tail -n 50 logistics/log/dev.log
+tail -n 50 log/dev.log
 
 # Check running processes
 # Windows
