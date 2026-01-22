@@ -14,7 +14,6 @@ const {
 const { loadEnv } = require('../toolkit/runtime/env');
 const {
   findRepoRoot,
-  resolveEnvFilePath,
   resolvePluginRoot,
   resolvePluginManifestPath,
   resolvePluginDistDir,
@@ -22,8 +21,8 @@ const {
 let createServer;
 let viteBuild;
 
-loadEnv({ path: resolveEnvFilePath('.env') });
 const repoRoot = findRepoRoot();
+loadEnv({ path: path.join(repoRoot, '.env') });
 const pluginRoot = resolvePluginRoot({ repoRoot });
 const pluginDistDir = resolvePluginDistDir({ repoRoot, pluginRoot });
 const manifestPath = resolvePluginManifestPath({ repoRoot, pluginRoot });
@@ -285,7 +284,7 @@ const forceJsxPlugin = {
   },
 };
 
-const DEFAULT_LAZY_WINDOW_MS = 60 * 1000; // 1 minute
+const DEFAULT_LAZY_WINDOW_MS = 10 * 1000; // 10 seconds
 const durationMultipliers = {
   ms: 1,
   s: 1000,
@@ -332,7 +331,7 @@ Options:
                   Configure rebuild scheduling
                   Examples:
                     --mode instant          (immediate rebuild, default)
-                    --mode lazy            (lazy compilation with default 60s quiet window)
+                    --mode lazy            (lazy compilation with default 10s quiet window)
                     --mode lazy 17s        (lazy compilation with 17s quiet window)
                     --mode lazy 5m         (lazy compilation with 5 minutes quiet window)
                     --mode lazy 2h         (lazy compilation with 2 hours quiet window)
@@ -712,8 +711,7 @@ Environment Variables:
       devTools: {
         icon: { type: 'dev-badge' },
       },
-      viteMode: true,
-      manifestDirRelativeToProjectRoot: 'src',
+      viteMode: false,
     });
 
     devPluginId = id;
@@ -1002,6 +1000,12 @@ Environment Variables:
     const relPath = relPlugin(file);
     // Only changes in src directory trigger rebuild
     if (relPath.startsWith('src/')) {
+      // Manifest change triggers full rebuild + dev plugin reupload
+      if (relPath === 'src/manifest.json' || path.basename(file) === 'manifest.json') {
+        devLog(`📋 Manifest change detected: ${relPath}`);
+        scheduleRebuild({ reason: 'src/manifest.json', force: true });
+        return;
+      }
       devLog(`🔨 Source change: ${relPath}`);
       pendingChangedFiles.add(relPath); // 记录变化的文件用于增量编译
       scheduleRebuild({ reason: relPath });
@@ -1240,6 +1244,11 @@ Environment Variables:
       if (key === 'r' || key === 'R') {
         console.log('[vite-dev] 🔁 Manual rebuild triggered...');
         scheduleRebuild({ reason: 'manual trigger', force: true });
+      }
+
+      if (key === 'm' || key === 'M') {
+        console.log('[vite-dev] 📋 Manual manifest rebuild triggered...');
+        scheduleRebuild({ reason: 'src/manifest.json', force: true });
       }
 
       if (key === 'q' || key === 'Q') {

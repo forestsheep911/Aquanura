@@ -11,7 +11,6 @@ const {
 } = require('../toolkit/plugin/manifest-validate');
 const { loadEnv } = require('../toolkit/runtime/env');
 const {
-  resolveEnvFilePath,
   findRepoRoot,
   resolvePluginRoot,
   resolvePluginManifestPath,
@@ -47,12 +46,12 @@ const forceJsxPlugin = {
 };
 
 (async () => {
-  loadEnv({ path: resolveEnvFilePath('.env') });
+  const repoRoot = findRepoRoot();
+  loadEnv({ path: path.join(repoRoot, '.env') });
   // Use ESM import to avoid Vite's deprecated CJS Node API warning.
   const { build } = await import('vite');
   const reactPlugin = await createReactPlugin();
 
-  const repoRoot = findRepoRoot();
   const pluginRoot = resolvePluginRoot({ repoRoot });
   const manifestPath = resolvePluginManifestPath({ repoRoot, pluginRoot });
   const manifest = await fs.readJSON(manifestPath);

@@ -134,7 +134,7 @@ The first time you run this:
 The dev server can rebuild in two ways:
 
 - **Instant (default)** – rebuild ~200 ms after every change.
-- **Lazy** – wait for a quiet window (`DEV_LAZY_WINDOW`, default 60 s) before rebuilding, ideal for batch edits. Enable via:
+- **Lazy** – wait for a quiet window (`DEV_LAZY_WINDOW`, default 10 s) before rebuilding, ideal for batch edits. Enable via:
   - CLI: `pnpm dev -- --mode lazy 45s`
   - `.env`: `DEV_MODE=lazy` and optional `DEV_LAZY_WINDOW=45s`
 

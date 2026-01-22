@@ -119,7 +119,7 @@ When adding middleware or changing build order, preserve this flow to keep auto-
 
 ### 5.1 Rebuild Scheduler & Hotkeys
 
-- `DEV_MODE` controls rebuild mode: `instant` (default) triggers after ~200 ms; `lazy` waits for a quiet window (`DEV_LAZY_WINDOW`, default `60s`) before running `buildEntries`.
+- `DEV_MODE` controls rebuild mode: `instant` (default) triggers after ~200 ms; `lazy` waits for a quiet window (`DEV_LAZY_WINDOW`, default `10s`) before running `buildEntries`.
 - CLI override: `pnpm dev -- --mode lazy 45s`. The optional second argument sets the quiet window. Without it, the env var or default is used.
 - Implementation details: file watcher marks `pendingChanges`, `scheduleRebuild` tracks `quietDeadline`, and `planRebuildCheck` debounces builds to minimize churn.
 - Manual control: the dev process places `stdin` in raw mode. Press `r`/`R` to force an immediate rebuild (ignores quiet period), `q`/`Q` to exit gracefully, or `Ctrl+C` to interrupt.

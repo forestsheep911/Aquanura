@@ -83,7 +83,7 @@ cross-platform behaviour stays correct.
 ### Rebuild Scheduling Options
 
 - `DEV_MODE=instant|lazy` — controls rebuild behavior (default instant).
-- `DEV_LAZY_WINDOW=60s` — quiet window for lazy mode (accepts `ms`, `s`, `m`, `h` suffixes).
+- `DEV_LAZY_WINDOW=10s` — quiet window for lazy mode (accepts `ms`, `s`, `m`, `h` suffixes).
 - CLI override: `pnpm --filter kintone-plugin-deploy run dev -- --mode lazy 45s`.
 - Regardless of mode, press `r` during dev server runtime to trigger a manual rebuild.
 
