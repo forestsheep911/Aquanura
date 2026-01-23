@@ -24,6 +24,7 @@ class PluginUploader {
   }
 
   async upload({ pluginId, file }) {
+    logger.log(`Uploading ${file.name || 'plugin'}...`);
     const { fileKey } = await this.client.file.uploadFile({ file });
     return pluginId
       ? this.updateWithFallback(pluginId, fileKey)

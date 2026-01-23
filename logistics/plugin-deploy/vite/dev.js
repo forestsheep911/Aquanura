@@ -60,16 +60,16 @@ async function writeToDevLog(message, level = 'INFO') {
 }
 
 function devLog(message) {
-  writeToDevLog(message, 'INFO').catch(() => {});
+  writeToDevLog(message, 'INFO').catch(() => { });
 }
 
 function devWarn(message) {
-  writeToDevLog(message, 'WARN').catch(() => {});
+  writeToDevLog(message, 'WARN').catch(() => { });
 }
 
 function devError(message, error) {
   const fullMessage = error ? `${message}: ${error?.message || error}` : message;
-  writeToDevLog(fullMessage, 'ERROR').catch(() => {});
+  writeToDevLog(fullMessage, 'ERROR').catch(() => { });
   // Errors are still output to console
   console.error(`[vite-dev] ${fullMessage}`);
 }
@@ -94,21 +94,21 @@ function normalizeModulePath(modulePath) {
   if (modulePath.includes('node_modules')) return null;
   // 跳过虚拟模块
   if (modulePath.startsWith('\0')) return null;
-  
+
   // 转换为正斜杠
   const normalized = modulePath.replace(/\\/g, '/');
-  
+
   // 提取 src/ 之后的部分
   const srcIndex = normalized.indexOf('/src/');
   if (srcIndex !== -1) {
     return 'src' + normalized.slice(srcIndex + 4);
   }
-  
+
   // 如果路径已经是相对路径（以 src/ 开头）
   if (normalized.startsWith('src/')) {
     return normalized;
   }
-  
+
   return null;
 }
 
@@ -138,20 +138,20 @@ function updateDependencyGraph(entryRel, modulePaths) {
       }
     }
   }
-  
+
   // 建立新依赖
   const newFiles = new Set();
   for (const modulePath of modulePaths) {
     const normalized = normalizeModulePath(modulePath);
     if (!normalized) continue;
-    
+
     newFiles.add(normalized);
     if (!fileToEntries.has(normalized)) {
       fileToEntries.set(normalized, new Set());
     }
     fileToEntries.get(normalized).add(entryRel);
   }
-  
+
   entryToFiles.set(entryRel, newFiles);
 }
 
@@ -163,12 +163,12 @@ function updateDependencyGraph(entryRel, modulePaths) {
 function getAffectedEntries(changedFile) {
   const normalized = normalizeFilePath(changedFile);
   const affected = fileToEntries.get(normalized);
-  
+
   if (!affected || affected.size === 0) {
     // 未知文件变化，保守策略：返回 null 表示全量编译
     return null;
   }
-  
+
   return new Set(affected);
 }
 
@@ -568,16 +568,16 @@ Environment Variables:
     logLevel,
     customLogger: QUIET
       ? {
-          info() {},
-          warn() {},
-          warnOnce() {},
-          error(msg) {
-            console.error(msg);
-          },
-          success() {},
-          clearScreen() {},
-          hasWarned: false,
-        }
+        info() { },
+        warn() { },
+        warnOnce() { },
+        error(msg) {
+          console.error(msg);
+        },
+        success() { },
+        clearScreen() { },
+        hasWarned: false,
+      }
       : undefined,
     esbuild: {
       loader: 'jsx',
@@ -702,6 +702,8 @@ Environment Variables:
       return { ok: false, skipped: true, reason: 'Dev server base URL is not ready yet.' };
     }
 
+    console.log(chalk.cyan('[vite] 📦 Packaging plugin...'));
+
     const { buildDevPlugin } = require('../toolkit/plugin');
     const { zip, id } = await buildDevPlugin({
       dirname: path.dirname(manifestPath),
@@ -749,6 +751,8 @@ Environment Variables:
 
     for (let index = 0; index < list.length; index += 1) {
       const info = list[index];
+      console.log(chalk.cyan(`[vite] 🔨 Building entry: ${info.rel}`));
+
       // 使用 write: false 获取 bundle 信息用于依赖追踪
       const result = await viteBuild({
         root: pluginRoot,
@@ -862,11 +866,11 @@ Environment Variables:
     rebuilding = true;
     const previousDeadline = quietDeadline;
     quietDeadline = null;
-    
+
     // 复制并清空待处理的变化文件集合
     const changedFiles = new Set(pendingChangedFiles);
     pendingChangedFiles.clear();
-    
+
     try {
       if (shouldReloadManifest) {
         manifest = await fs.readJSON(manifestPath);
@@ -1224,11 +1228,10 @@ Environment Variables:
   // Output a concise startup completion message
   console.log(`[vite-dev] ✅ Dev server started (port: ${actualPort}, log file: ${devLogFile})`);
   console.log(
-    `[vite-dev] Current compilation mode: ${
-      isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} quiet)` : 'instant'
+    `[vite-dev] Current compilation mode: ${isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} quiet)` : 'instant'
     }`,
   );
-  console.log('[vite-dev] 🔁 Press r to rebuild immediately, q to quit, Ctrl+C also works');
+  console.log('[vite-dev] 🔁 Press r to rebuild JS, u to full build & upload, q to quit');
 
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
@@ -1246,8 +1249,10 @@ Environment Variables:
         scheduleRebuild({ reason: 'manual trigger', force: true });
       }
 
-      if (key === 'm' || key === 'M') {
-        console.log('[vite-dev] 📋 Manual manifest rebuild triggered...');
+      const isManifestRebuild = key === 'm' || key === 'M' || key === 'u' || key === 'U';
+
+      if (isManifestRebuild) {
+        console.log('[vite-dev] 📋 Manual full rebuild & upload triggered...');
         scheduleRebuild({ reason: 'src/manifest.json', force: true });
       }
 
