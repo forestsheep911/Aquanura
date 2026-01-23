@@ -12,6 +12,7 @@ const {
   formatValidationResult,
 } = require('../toolkit/plugin/manifest-validate');
 const { loadEnv } = require('../toolkit/runtime/env');
+const i18n = require('../toolkit/i18n');
 const {
   findRepoRoot,
   resolvePluginRoot,
@@ -702,7 +703,7 @@ Environment Variables:
       return { ok: false, skipped: true, reason: 'Dev server base URL is not ready yet.' };
     }
 
-    console.log(chalk.cyan('[vite] 📦 Packaging plugin...'));
+    console.log(chalk.cyan(i18n.t('vite.packaging')));
 
     const { buildDevPlugin } = require('../toolkit/plugin');
     const { zip, id } = await buildDevPlugin({
@@ -751,7 +752,7 @@ Environment Variables:
 
     for (let index = 0; index < list.length; index += 1) {
       const info = list[index];
-      console.log(chalk.cyan(`[vite] 🔨 Building entry: ${info.rel}`));
+      console.log(chalk.cyan(i18n.t('vite.building', { path: info.rel })));
 
       // 使用 write: false 获取 bundle 信息用于依赖追踪
       const result = await viteBuild({
@@ -1006,7 +1007,7 @@ Environment Variables:
     if (relPath.startsWith('src/')) {
       // Manifest change triggers full rebuild + dev plugin reupload
       if (relPath === 'src/manifest.json' || path.basename(file) === 'manifest.json') {
-        devLog(`📋 Manifest change detected: ${relPath}`);
+        devLog(i18n.t('vite.manifest_change', { path: relPath }));
         scheduleRebuild({ reason: 'src/manifest.json', force: true });
         return;
       }
@@ -1226,12 +1227,13 @@ Environment Variables:
   }
 
   // Output a concise startup completion message
-  console.log(`[vite-dev] ✅ Dev server started (port: ${actualPort}, log file: ${devLogFile})`);
+  console.log(i18n.t('vite.started', { port: actualPort, logFile: devLogFile }));
   console.log(
-    `[vite-dev] Current compilation mode: ${isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} quiet)` : 'instant'
-    }`,
+    i18n.t('vite.mode', {
+      mode: isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} quiet)` : 'instant',
+    }),
   );
-  console.log('[vite-dev] 🔁 Press r to rebuild JS, u to full build & upload, q to quit');
+  console.log(i18n.t('vite.instructions'));
 
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
@@ -1240,24 +1242,24 @@ Environment Variables:
 
     process.stdin.on('data', (key) => {
       if (key === '\u0003') {
-        console.log('\n[vite-dev] Received exit signal, shutting down...');
+        console.log(i18n.t('vite.shutdown'));
         process.exit(0);
       }
 
       if (key === 'r' || key === 'R') {
-        console.log('[vite-dev] 🔁 Manual rebuild triggered...');
+        console.log(i18n.t('vite.rebuild_manual_js'));
         scheduleRebuild({ reason: 'manual trigger', force: true });
       }
 
       const isManifestRebuild = key === 'm' || key === 'M' || key === 'u' || key === 'U';
 
       if (isManifestRebuild) {
-        console.log('[vite-dev] 📋 Manual full rebuild & upload triggered...');
+        console.log(i18n.t('vite.rebuild_manual_full'));
         scheduleRebuild({ reason: 'src/manifest.json', force: true });
       }
 
       if (key === 'q' || key === 'Q') {
-        console.log('\n[vite-dev] Shutting down dev server...');
+        console.log(i18n.t('vite.shutdown'));
         process.exit(0);
       }
     });

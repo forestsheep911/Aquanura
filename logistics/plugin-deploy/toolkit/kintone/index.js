@@ -1,5 +1,6 @@
 const { KintoneRestAPIClient } = require('@kintone/rest-api-client');
 const logger = require('../utils/logger');
+const i18n = require('../i18n');
 
 const DUPLICATE_CODE = 'GAIA_PL18';
 const ID_MISMATCH_CODE = 'GAIA_PL22';
@@ -13,9 +14,13 @@ function normalizeErrorId(error) {
 }
 
 function logSuccess(action, result) {
-  logger.log(`Plugin ${action} successful:`);
-  logger.log(`- ID: ${result.id}`);
-  logger.log(`- Version: ${result.version}`);
+  if (action === 'installed') {
+    logger.log(i18n.t('kintone.success_install'));
+  } else {
+    logger.log(i18n.t('kintone.success'));
+  }
+  logger.log(i18n.t('kintone.id', { id: result.id }));
+  logger.log(i18n.t('kintone.version', { version: result.version }));
 }
 
 class PluginUploader {
@@ -24,7 +29,7 @@ class PluginUploader {
   }
 
   async upload({ pluginId, file }) {
-    logger.log(`Uploading ${file.name || 'plugin'}...`);
+    logger.log(i18n.t('kintone.uploading', { name: file.name || 'plugin' }));
     const { fileKey } = await this.client.file.uploadFile({ file });
     return pluginId
       ? this.updateWithFallback(pluginId, fileKey)
