@@ -2,6 +2,7 @@
 /* global fetch */
 const path = require('node:path');
 const fs = require('fs-extra');
+const ora = require('ora');
 const chalk = require('chalk');
 const { transformSync } = require('esbuild');
 const { certificateFor } = require('../toolkit/cert');
@@ -336,7 +337,7 @@ Options:
                     --mode lazy 17s        (lazy compilation with 17s quiet window)
                     --mode lazy 5m         (lazy compilation with 5 minutes quiet window)
                     --mode lazy 2h         (lazy compilation with 2 hours quiet window)
-  VITE_PORT       Override dev server port (default 5173)
+  VITE_PORT       Override dev server port (default 3000)
   VITE_HOST       Override dev server host (default 127.0.0.1)
   VITE_LOG_LEVEL Set Vite log level (info|warn|error|silent)
 
@@ -513,7 +514,7 @@ Environment Variables:
     .map((d) => d.trim())
     .filter(Boolean);
   const httpsConfig = certificateFor(extraDomains);
-  const preferPort = Number(process.env.VITE_PORT || 5173);
+  const preferPort = Number(process.env.VITE_PORT || 3000);
 
   const manifestValidateMode = getManifestValidateMode();
   const pluginDir = path.dirname(manifestPath);
@@ -561,6 +562,9 @@ Environment Variables:
   });
   if (!initialValidation.valid && manifestValidateMode === 'strict') {
     process.exit(1);
+  }
+  if (initialValidation.valid) {
+    console.log(i18n.t('vite.manifest_valid'));
   }
 
   const server = await createServer({
@@ -752,13 +756,14 @@ Environment Variables:
 
     for (let index = 0; index < list.length; index += 1) {
       const info = list[index];
-      console.log(chalk.cyan(i18n.t('vite.building', { path: info.rel })));
+      // Log to file only (not console) to keep spinner clean
+      devLog(`Building entry: ${info.rel}`);
 
       // 使用 write: false 获取 bundle 信息用于依赖追踪
       const result = await viteBuild({
         root: pluginRoot,
         plugins: [forceJsxPlugin, reactPlugin],
-        logLevel: process.env.VITE_LOG_LEVEL || (QUIET ? 'silent' : 'error'),
+        logLevel: 'silent',
         esbuild: {
           loader: 'jsx',
           include: /\.js$/,
@@ -810,8 +815,35 @@ Environment Variables:
     }
   };
 
+  // Helper: Restore stdin raw mode after ora spinner
+  const restoreStdin = () => {
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.setEncoding('utf8');
+    }
+  };
+
+  const buildEntriesWithSpinner = async (targetRelSet) => {
+    const spinner = ora({
+      text: i18n.t('vite.spinner_building'),
+      color: 'cyan',
+      spinner: 'dots',
+    }).start();
+
+    try {
+      await buildEntries(targetRelSet);
+      spinner.succeed(i18n.t('vite.spinner_success'));
+      restoreStdin();
+    } catch (e) {
+      spinner.fail(i18n.t('vite.spinner_failed'));
+      restoreStdin();
+      throw e;
+    }
+  };
+
   devLog('Building initial version...');
-  await buildEntries();
+  await buildEntriesWithSpinner();
   lastChange = Date.now();
 
   let rebuildTimer = null;
@@ -913,7 +945,7 @@ Environment Variables:
         devLog(`📦 Full rebuild: all entries`);
       }
 
-      await buildEntries(targetRelSet);
+      await buildEntriesWithSpinner(targetRelSet);
 
       if (shouldReloadManifest) {
         const result = await rebuildDevPluginPackage();
@@ -1226,14 +1258,56 @@ Environment Variables:
     devLog('Tip: Set DEV_UPLOAD=true to auto-upload dev plugin package');
   }
 
-  // Output a concise startup completion message
-  console.log(i18n.t('vite.started', { port: actualPort, logFile: devLogFile }));
-  console.log(
-    i18n.t('vite.mode', {
-      mode: isLazyMode ? `lazy (${formatDuration(lazyQuietWindowMs)} quiet)` : 'instant',
-    }),
-  );
-  console.log(i18n.t('vite.instructions'));
+  // === Detailed startup info (matching AI-Import output) ===
+
+  // Port status
+  if (actualPort !== preferPort) {
+    console.log(i18n.t('vite.port_conflict_title'));
+    console.log(i18n.t('vite.port_conflict_expected', { port: preferPort }));
+    console.log(i18n.t('vite.port_conflict_switch', { port: actualPort }));
+    console.log(i18n.t('vite.port_conflict_ok'));
+  } else {
+    console.log(i18n.t('vite.port_ok', { port: actualPort }));
+  }
+
+  // Hot reload status
+  if (wsServer) {
+    console.log(i18n.t('vite.hot_reload', { port: actualPort }));
+  }
+
+  // Server info block
+  console.log(i18n.t('vite.server_info_title'));
+  console.log(i18n.t('vite.server_https', { port: actualPort }));
+  console.log(i18n.t('vite.server_ws', { port: actualPort }));
+  console.log(i18n.t('vite.server_log', { port: actualPort }));
+  console.log(i18n.t('vite.server_static', { port: actualPort }));
+  console.log(i18n.t('vite.server_port_status', {
+    port: actualPort,
+    status: actualPort !== preferPort
+      ? i18n.t('vite.server_port_fallback', { expected: preferPort })
+      : i18n.t('vite.server_port_ok'),
+  }));
+
+  // Compilation mode
+  if (isLazyMode) {
+    console.log(i18n.t('vite.mode_lazy', { window: formatDuration(lazyQuietWindowMs), source: `${modeSource}` }));
+    console.log(i18n.t('vite.lazy_hint'));
+  } else {
+    console.log(i18n.t('vite.mode_instant', { source: modeSource }));
+  }
+
+  // Manifest smart reload info
+  console.log(i18n.t('vite.manifest_reload_title'));
+  console.log(i18n.t('vite.manifest_reload_code'));
+  console.log(i18n.t('vite.manifest_reload_manifest'));
+
+  // Full instructions
+  console.log(i18n.t('vite.instructions_full'));
+
+  // cleanupAndExit: unified exit function
+  const cleanupAndExit = (code = 0) => {
+    process.exit(code);
+  };
 
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
@@ -1243,7 +1317,7 @@ Environment Variables:
     process.stdin.on('data', (key) => {
       if (key === '\u0003') {
         console.log(i18n.t('vite.shutdown'));
-        process.exit(0);
+        cleanupAndExit(0);
       }
 
       if (key === 'r' || key === 'R') {
@@ -1260,8 +1334,17 @@ Environment Variables:
 
       if (key === 'q' || key === 'Q') {
         console.log(i18n.t('vite.shutdown'));
-        process.exit(0);
+        cleanupAndExit(0);
       }
     });
   }
+
+  // Signal handlers for robust exit
+  process.on('SIGINT', () => {
+    console.log(i18n.t('vite.shutdown'));
+    cleanupAndExit(0);
+  });
+  process.on('SIGTERM', () => {
+    cleanupAndExit(0);
+  });
 })();

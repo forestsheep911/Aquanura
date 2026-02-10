@@ -37,50 +37,53 @@ const {
     try {
         const { build: viteBuild } = require('vite');
 
-        for (let i = 0; i < indicesToBuild.length; i++) {
-            const entryIndex = indicesToBuild[i];
-            const info = entryInfos[entryIndex];
+        // Parallel builds for speed
+        await Promise.all(
+            indicesToBuild.map(async (entryIndex) => {
+                const info = entryInfos[entryIndex];
 
-            await viteBuild({
-                root: pluginRoot,
-                configFile: path.join(pluginRoot, 'vite.config.js'),
-                logLevel: logLevel,
-                define: {
-                    __DEV_LOG_ENDPOINT__: JSON.stringify('/__devlog'),
-                    __DEV_LIVE_ENDPOINT__: JSON.stringify('/__live'),
-                    __PLUGIN_VERSION__: JSON.stringify(manifestVersion),
-                    __DEV_LOG_LEVEL__: JSON.stringify(devLogLevel),
-                    __DEV_LOCAL_LOG_ENABLED__: JSON.stringify(localLogEnabled),
-                    __DEV_SERVER_ORIGIN__: JSON.stringify(`https://localhost:${actualPort}`),
-                },
-                build: {
-                    outDir: tempOut,
-                    emptyOutDir: emptyOutDir && i === 0,
-                    cssCodeSplit: true,
-                    chunkSizeWarningLimit: 4096,
-                    rollupOptions: {
-                        input: info.absPath,
-                        onwarn: (warning, warn) => {
-                            if (
-                                warning &&
-                                (warning.code === 'MODULE_LEVEL_DIRECTIVE' || warning.code === 'CHUNK_SIZE_LIMIT')
-                            )
-                                return;
-                            warn(warning);
-                        },
-                        output: {
-                            format: 'iife',
-                            entryFileNames: 'js/[name].js',
-                            assetFileNames: (assetInfo) => {
-                                const ext = path.extname(assetInfo.name || '');
-                                if (ext === '.css') return 'css/[name][extname]';
-                                return 'assets/[name][extname]';
+                await viteBuild({
+                    root: pluginRoot,
+                    configFile: path.join(pluginRoot, 'vite.config.js'),
+                    logLevel: logLevel,
+                    define: {
+                        __DEV_LOG_ENDPOINT__: JSON.stringify('/__devlog'),
+                        __DEV_LIVE_ENDPOINT__: JSON.stringify('/__live'),
+                        __PLUGIN_VERSION__: JSON.stringify(manifestVersion),
+                        __DEV_LOG_LEVEL__: JSON.stringify(devLogLevel),
+                        __DEV_LOCAL_LOG_ENABLED__: JSON.stringify(localLogEnabled),
+                        __DEV_SERVER_ORIGIN__: JSON.stringify(`https://localhost:${actualPort}`),
+                    },
+                    build: {
+                        outDir: tempOut,
+                        // ⚠️ Must be false for parallel builds to avoid race conditions
+                        emptyOutDir: false,
+                        cssCodeSplit: true,
+                        chunkSizeWarningLimit: 4096,
+                        rollupOptions: {
+                            input: info.absPath,
+                            onwarn: (warning, warn) => {
+                                if (
+                                    warning &&
+                                    (warning.code === 'MODULE_LEVEL_DIRECTIVE' || warning.code === 'CHUNK_SIZE_LIMIT')
+                                )
+                                    return;
+                                warn(warning);
+                            },
+                            output: {
+                                format: 'iife',
+                                entryFileNames: 'js/[name].js',
+                                assetFileNames: (assetInfo) => {
+                                    const ext = path.extname(assetInfo.name || '');
+                                    if (ext === '.css') return 'css/[name][extname]';
+                                    return 'assets/[name][extname]';
+                                },
                             },
                         },
                     },
-                },
-            });
-        }
+                });
+            }),
+        );
 
         // Build successful
         process.exit(0);
