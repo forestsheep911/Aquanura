@@ -9,12 +9,15 @@
     "fix-cert": "node logistics/plugin-deploy/fix-cert.js",
     "dev": "node --max-old-space-size=4096 logistics/plugin-deploy/vite/dev.js",
     "build": "node logistics/plugin-deploy/vite/build.js",
+    "build:prod": "pnpm run build",
     "build:dev": "node logistics/plugin-deploy/vite/build.js --dev",
     "upload:dev": "node logistics/plugin-deploy/upload-dev.js",
     "upload:prod": "node logistics/plugin-deploy/upload-prod.js",
     "deploy:dev": "pnpm run build:dev && pnpm run upload:dev",
-    "deploy:prod": "pnpm run build && pnpm run upload:prod",
-    "deploy:watch": "node logistics/plugin-deploy/vite/deploy-watch.js"
+    "deploy:prod": "pnpm run build:prod && pnpm run upload:prod",
+    "deploy:watch": "pnpm run deploy:dev:watch",
+    "deploy:dev:watch": "node logistics/plugin-deploy/vite/deploy-watch.js",
+    "deploy:prod:watch": "node logistics/plugin-deploy/vite/deploy-watch.js --target prod"
   },
   "keywords": [
     "kintone",

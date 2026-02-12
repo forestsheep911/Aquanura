@@ -64,7 +64,15 @@ async function buildDevPlugin({
   return createPluginZip(ppkContent, contentsZip);
 }
 
-function buildPlugin({ dirname, manifest, ppk, assetsByChunkName, distPath, vite }) {
+function buildPlugin({
+  dirname,
+  manifest,
+  ppk,
+  assetsByChunkName,
+  distPath,
+  vite,
+  extraAssets = {},
+}) {
   const ppkContent = getPPKContent(ppk);
   const manifestDir = path.basename(dirname);
 
@@ -82,7 +90,10 @@ function buildPlugin({ dirname, manifest, ppk, assetsByChunkName, distPath, vite
     bundledScripts = {};
   }
 
-  const contentsZip = createContentsZip(dirname, manifest, bundledScripts);
+  const contentsZip = createContentsZip(dirname, manifest, {
+    ...bundledScripts,
+    ...extraAssets,
+  });
   return createPluginZip(ppkContent, contentsZip);
 }
 

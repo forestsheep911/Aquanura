@@ -48,11 +48,46 @@ async function inferPluginId(pluginRoot) {
   }
 }
 
+async function resolveProdPluginZip(repoRoot, pluginRoot) {
+  const candidates = [resolvePluginZipPath({ repoRoot, pluginRoot })];
+  const manifestPath = path.join(pluginRoot, 'src', 'manifest.json');
+
+  if (await fs.pathExists(manifestPath)) {
+    const manifest = await fs.readJSON(manifestPath);
+    const pluginName = (manifest.name?.en || manifest.name?.ja || manifest.name?.zh || 'plugin')
+      .replace(/[^a-zA-Z0-9\u4e00-\u9fa5\u3040-\u30ff-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    const pluginVersion = manifest.version || '1.0.0';
+    candidates.push(path.join(pluginRoot, 'dist', `${pluginName}-plugin-${pluginVersion}.zip`));
+  }
+
+  candidates.push(path.join(pluginRoot, 'dist', 'plugin.zip'));
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate || seen.has(candidate)) continue;
+    seen.add(candidate);
+    if (await fs.pathExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  const distDir = path.join(pluginRoot, 'dist');
+  if (await fs.pathExists(distDir)) {
+    const zipFiles = (await fs.readdir(distDir)).filter((name) => name.endsWith('.zip'));
+    if (zipFiles.length === 1) {
+      return path.join(distDir, zipFiles[0]);
+    }
+  }
+
+  return resolvePluginZipPath({ repoRoot, pluginRoot });
+}
+
 (async () => {
   loadEnv({ path: resolveEnvFilePath('.env') });
   const repoRoot = findRepoRoot();
   const pluginRoot = resolvePluginRoot({ repoRoot });
-  const pluginZip = resolvePluginZipPath({ repoRoot, pluginRoot });
+  const pluginZip = await resolveProdPluginZip(repoRoot, pluginRoot);
 
   const baseUrl = process.env.KINTONE_PROD_BASE_URL;
   const username = process.env.KINTONE_PROD_USERNAME;

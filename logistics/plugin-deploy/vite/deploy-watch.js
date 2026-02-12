@@ -97,7 +97,7 @@ Examples:
     // Parse deploy target
     const targetIndex = argv.indexOf('--target');
     const target = targetIndex >= 0 && argv[targetIndex + 1] ? argv[targetIndex + 1] : 'dev';
-    const buildCmd = target === 'prod' ? 'build' : 'build:dev';
+    const buildCmd = target === 'prod' ? 'build:prod' : 'build:dev';
     const uploadCmd = target === 'prod' ? 'upload:prod' : 'upload:dev';
 
     console.log(chalk.cyan('[deploy-watch] 🚀 Continuous deployment mode started'));

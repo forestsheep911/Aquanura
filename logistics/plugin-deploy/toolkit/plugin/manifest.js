@@ -44,16 +44,39 @@ function getBundledScripts(manifest, assetsByChunkName, distPath) {
   });
 }
 
+function normalizeBaseUrls(baseUrl) {
+  if (!baseUrl) {
+    return { js: '', css: '' };
+  }
+  if (typeof baseUrl === 'string') {
+    return { js: baseUrl, css: '' };
+  }
+  const js = baseUrl.js || baseUrl.base || baseUrl.css || '';
+  const css = baseUrl.css || baseUrl.js || baseUrl.base || '';
+  return { js, css };
+}
+
 function transformScriptUrls(manifest, baseUrl) {
+  const { js: jsBaseUrl, css: cssBaseUrl } = normalizeBaseUrls(baseUrl);
   const types = ['desktop', 'mobile', 'config'];
   for (const type of types) {
     const jsFiles = manifest[type]?.js || [];
-    if (jsFiles.length === 0) continue;
-    manifest[type].js = jsFiles.map((file) => {
-      if (/^https?:\/\//.test(file)) return file;
-      const name = path.basename(file, path.extname(file));
-      return `${baseUrl}/${name}.js`;
-    });
+    if (jsFiles.length > 0) {
+      manifest[type].js = jsFiles.map((file) => {
+        if (/^https?:\/\//.test(file)) return file;
+        const name = path.basename(file, path.extname(file));
+        return `${jsBaseUrl}/${name}.js`;
+      });
+    }
+
+    const cssFiles = manifest[type]?.css || [];
+    if (cssFiles.length > 0 && cssBaseUrl) {
+      manifest[type].css = cssFiles.map((file) => {
+        if (/^https?:\/\//.test(file)) return file;
+        const name = path.basename(file, path.extname(file));
+        return `${cssBaseUrl}/${name}.css`;
+      });
+    }
   }
   return manifest;
 }

@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const chalk = require('chalk');
 const { transformSync } = require('esbuild');
 const { buildPlugin, buildDevPlugin } = require('../toolkit/plugin');
+const { collectCssEntries, compileCss } = require('../toolkit/css');
 const {
   getManifestValidateMode,
   validateManifest,
@@ -55,6 +56,7 @@ const forceJsxPlugin = {
   const pluginRoot = resolvePluginRoot({ repoRoot });
   const manifestPath = resolvePluginManifestPath({ repoRoot, pluginRoot });
   const manifest = await fs.readJSON(manifestPath);
+  const localCssEntries = collectCssEntries(manifest);
   const manifestValidateMode = getManifestValidateMode();
   if (manifestValidateMode !== 'off') {
     const pluginDir = path.dirname(manifestPath);
@@ -198,6 +200,16 @@ const forceJsxPlugin = {
     spaces: 2,
   });
 
+  const compiledCss = localCssEntries.length
+    ? await compileCss(manifest, pluginRoot, {
+        onWarning: (message) => console.warn(chalk.yellow(message)),
+      })
+    : {};
+  const cssBuffers = {};
+  for (const [relPath, css] of Object.entries(compiledCss)) {
+    cssBuffers[relPath] = Buffer.from(css);
+  }
+
   // Debug log for dev mode detection (only in verbose mode)
   if (logLevel === 'debug') {
     console.log(
@@ -240,6 +252,7 @@ const forceJsxPlugin = {
       outDirAbsolutePath: outDir,
       manifestDirRelativeToProjectRoot: path.basename(path.dirname(manifestPath)),
     },
+    extraAssets: cssBuffers,
   });
 
   const defaultZip = path.join(outDir, 'plugin.zip');

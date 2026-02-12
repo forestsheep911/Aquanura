@@ -46,11 +46,37 @@ async function inferPluginId(pluginRoot) {
   }
 }
 
+async function resolveDevPluginZip(repoRoot, pluginRoot) {
+  const candidates = [
+    resolvePluginZipPath({ repoRoot, pluginRoot }),
+    path.join(pluginRoot, 'dist', 'plugin-dev.zip'),
+    path.join(pluginRoot, 'dist', 'plugin.zip'),
+  ];
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate || seen.has(candidate)) continue;
+    seen.add(candidate);
+    if (await fs.pathExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  const distDir = path.join(pluginRoot, 'dist');
+  if (await fs.pathExists(distDir)) {
+    const zipFiles = (await fs.readdir(distDir)).filter((name) => name.endsWith('.zip'));
+    if (zipFiles.length === 1) {
+      return path.join(distDir, zipFiles[0]);
+    }
+  }
+
+  return resolvePluginZipPath({ repoRoot, pluginRoot });
+}
+
 (async () => {
   loadEnv({ path: resolveEnvFilePath('.env') });
   const repoRoot = findRepoRoot();
   const pluginRoot = resolvePluginRoot({ repoRoot });
-  const pluginZip = resolvePluginZipPath({ repoRoot, pluginRoot });
+  const pluginZip = await resolveDevPluginZip(repoRoot, pluginRoot);
 
   const baseUrl = process.env.KINTONE_DEV_BASE_URL;
   const username = process.env.KINTONE_DEV_USERNAME;
