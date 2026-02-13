@@ -4,12 +4,14 @@
   "description": "A modern Kintone plugin development template with Vite, hot reload, and local logging",
   "private": true,
   "scripts": {
+    "lint": "biome check .",
     "check": "biome check --write",
-    "format": "biome format --write",
+    "format": "biome format . --write",
+    "install:all": "pnpm install",
     "fix-cert": "node logistics/plugin-deploy/fix-cert.js",
     "dev": "node --max-old-space-size=4096 logistics/plugin-deploy/vite/dev.js",
-    "build": "node logistics/plugin-deploy/vite/build.js",
-    "build:prod": "pnpm run build",
+    "build": "pnpm run build:prod",
+    "build:prod": "node logistics/plugin-deploy/vite/build.js",
     "build:dev": "node logistics/plugin-deploy/vite/build.js --dev",
     "upload:dev": "node logistics/plugin-deploy/upload-dev.js",
     "upload:prod": "node logistics/plugin-deploy/upload-prod.js",
@@ -29,6 +31,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4"
+    "@biomejs/biome": "^1.9.4",
+    "ora": "^5.4.1"
   }
 }

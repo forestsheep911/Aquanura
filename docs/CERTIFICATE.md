@@ -62,7 +62,7 @@ DEV_HTTPS_DOMAINS=dev.local,192.168.1.100,myapp.test
 
 3. Access from another device:
    ```
-   https://192.168.1.100:5173
+   https://192.168.1.100:3000
    ```
 
 ## Troubleshooting
@@ -136,7 +136,7 @@ sudo update-ca-trust
 
 1. **Restart your browser** completely (close all windows)
 2. **Clear browser cache** and SSL state
-3. **Check firewall** isn't blocking localhost:5173
+3. **Check firewall** isn't blocking localhost:3000
 4. **Try incognito/private mode** to rule out extensions
 
 ## Certificate Files

@@ -122,7 +122,7 @@ KINTONE_DEV_PASSWORD=your-password
 pnpm dev
 ```
 
-This starts the Vite dev server at `https://localhost:5173` with hot reload enabled.
+This starts the Vite dev server at `https://localhost:3000` with hot reload enabled.
 
 The first time you run this:
 1. A proxy plugin is generated and can be uploaded to Kintone
@@ -141,6 +141,8 @@ The dev server can rebuild in two ways:
 While the dev server is running:
 
 - Press `r` to force an immediate rebuild (skips the lazy timer).
+- Press `m` to repackage/re-upload `manifest.json` changes only (fast path).
+- Press `u` to force a full rebuild + manifest repackage/re-upload.
 - Press `q` (or `Ctrl+C`) to stop the server gracefully.
 
 ### 5. Build for Production
@@ -166,11 +168,14 @@ pnpm upload:prod
 | Command | Description |
 |---------|-------------|
 | `pnpm install` | Install all dependencies |
+| `pnpm install:all` | Install all dependencies (compatibility alias) |
 | `pnpm dev` | Start dev server with hot reload |
 | `pnpm build` | Build production plugin |
 | `pnpm upload:dev` | Upload to dev environment |
 | `pnpm upload:prod` | Upload to production |
 | `pnpm fix-cert` | Fix HTTPS certificate issues |
+| `pnpm lint` | Run Biome checks without writing fixes |
+| `pnpm format` | Format files with Biome |
 
 ## 📖 Documentation
 
@@ -188,7 +193,7 @@ pnpm upload:prod
 
 The template uses a "proxy plugin" technique:
 
-1. During `pnpm dev`, manifest.json is rewritten to load scripts from `https://localhost:5173`
+1. During `pnpm dev`, manifest.json is rewritten to load scripts from `https://localhost:3000`
 2. A development plugin package is generated and uploaded once
 3. All subsequent code changes are served from the local dev server
 4. Simply refresh Kintone to see changes - no re-upload!

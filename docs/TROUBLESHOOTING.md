@@ -33,22 +33,22 @@ Then restart your browser.
 
 **Alternative:** Manually trust the certificate
 1. Open Chrome/Edge
-2. Go to `https://localhost:5173`
+2. Go to `https://localhost:3000`
 3. Click "Advanced" → "Proceed to localhost"
 
 ### Problem: Certificate works but scripts still don't load
 
 **Check:**
 1. Dev server is running (`pnpm dev`)
-2. Port 5173 is not blocked by firewall
-3. No other process using port 5173
+2. Port 3000 is not blocked by firewall
+3. No other process using port 3000
 
 ```bash
 # Windows: Check port usage
-netstat -ano | findstr :5173
+netstat -ano | findstr :3000
 
 # If port is in use, change it in .env
-VITE_PORT=3000
+VITE_PORT=3001
 ```
 
 ## Development Server Issues
@@ -60,11 +60,11 @@ VITE_PORT=3000
 **Solution:**
 ```bash
 # Windows
-netstat -ano | findstr :5173
+netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 
 # Mac/Linux
-lsof -ti:5173 | xargs kill
+lsof -ti:3000 | xargs kill
 ```
 
 Or change the port in `.env`:
@@ -83,7 +83,7 @@ VITE_PORT=3001
 1. **Check dev server is running**
    ```bash
    pnpm dev
-   # Should show "Local: https://localhost:5173"
+   # Should show "Local: https://localhost:3000"
    ```
 
 2. **Verify proxy plugin is uploaded**
@@ -497,10 +497,10 @@ tail -n 50 log/dev.log
 
 # Check running processes
 # Windows
-netstat -ano | findstr :5173
+netstat -ano | findstr :3000
 
 # Mac/Linux
-lsof -i:5173
+lsof -i:3000
 ```
 
 ## Still Stuck?
@@ -521,4 +521,3 @@ lsof -i:5173
    - Share your `dev.log` file
    - Describe the problem clearly
    - Include error messages
-

@@ -163,9 +163,9 @@ DEV_LOG_DIR=log
 
 ### Log Endpoint
 
-The dev server exposes a single HTTP endpoint:
+The dev server exposes a single HTTPS endpoint:
 
-`POST http://localhost:5173/__devlog`
+`POST https://localhost:3000/__devlog`
 
 Writes logs to `log/dev.log`.
 
@@ -350,4 +350,3 @@ cat log/dev.log | jq 'select(.level == "ERROR")'
 - Read [DEVELOPMENT.md](DEVELOPMENT.md) for development workflow
 - Read [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
 - Customize the logger for your needs
-

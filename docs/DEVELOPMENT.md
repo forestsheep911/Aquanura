@@ -56,10 +56,24 @@ When you run `pnpm dev`, the template starts a Vite development server with:
 
 ### How Hot Reload Works
 
-1. Development server rewrites `manifest.json` to load scripts from `https://localhost:5173`
+1. Development server rewrites `manifest.json` to load scripts from `https://localhost:3000`
 2. A proxy plugin is uploaded to Kintone once
 3. All subsequent code changes are served from the local dev server
 4. Simply refresh the Kintone page to see changes
+
+### Rebuild Modes & Hotkeys
+
+- **Instant** (default) - rebuild starts quickly after changes.
+- **Lazy** - waits for a quiet window before rebuilding (`DEV_LAZY_WINDOW`, default `10s`).
+  - CLI: `pnpm dev -- --mode lazy 45s`
+  - `.env`: `DEV_MODE=lazy`
+
+While `pnpm dev` is running:
+
+- Press `r` to rebuild JS immediately.
+- Press `m` to repackage/re-upload `manifest.json` only (fast path).
+- Press `u` to run full rebuild + manifest repackage/re-upload.
+- Press `q` (or `Ctrl+C`) to stop the server.
 
 ### Manifest Validation
 
@@ -192,7 +206,7 @@ Logs are in `log/dev.log`:
 
 ```bash
 # Windows PowerShell
-Get-Content -Tail 20 -Wait logistics\log\dev.log
+Get-Content -Tail 20 -Wait log\dev.log
 
 # Mac/Linux
 tail -f log/dev.log

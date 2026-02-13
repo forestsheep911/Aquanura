@@ -103,7 +103,7 @@ function normalizeModulePath(modulePath) {
   // 提取 src/ 之后的部分
   const srcIndex = normalized.indexOf('/src/');
   if (srcIndex !== -1) {
-    return 'src' + normalized.slice(srcIndex + 4);
+    return `src${normalized.slice(srcIndex + 4)}`;
   }
 
   // 如果路径已经是相对路径（以 src/ 开头）
@@ -337,6 +337,17 @@ Options:
                     --mode lazy 17s        (lazy compilation with 17s quiet window)
                     --mode lazy 5m         (lazy compilation with 5 minutes quiet window)
                     --mode lazy 2h         (lazy compilation with 2 hours quiet window)
+
+Keyboard Shortcuts:
+  r               Rebuild JS immediately (skip lazy quiet window)
+  m               Repackage/re-upload manifest only (fast path)
+  u               Full rebuild + manifest repackage/re-upload
+  q               Exit dev server
+
+Smart Reload:
+  Code changes: incremental build + hot update.
+  manifest.json changes: full rebuild + repackage (safe default).
+
   VITE_PORT       Override dev server port (default 3000)
   VITE_HOST       Override dev server host (default 127.0.0.1)
   VITE_LOG_LEVEL Set Vite log level (info|warn|error|silent)
@@ -454,7 +465,7 @@ Environment Variables:
     if (envLogDir) {
       return path.isAbsolute(envLogDir) ? envLogDir : path.join(repoRoot, envLogDir);
     }
-    return path.join(repoRoot, 'logistics', 'log');
+    return path.join(repoRoot, 'log');
   };
 
   // Initialize log file
@@ -462,8 +473,8 @@ Environment Variables:
   await fs.ensureDir(logDir);
   devLogFile = path.join(logDir, 'dev.log');
   const modeDescription = isLazyMode
-    ? `?? Lazy compilation mode enabled, quiet window ${formatDuration(lazyQuietWindowMs)} (${modeSource}, ${lazyWindowSource})`
-    : `? Instant compilation mode (${modeSource})`;
+    ? `Lazy compilation mode enabled, quiet window ${formatDuration(lazyQuietWindowMs)} (${modeSource}, ${lazyWindowSource})`
+    : `Instant compilation mode (${modeSource})`;
   devLog(modeDescription);
   if (isLazyMode) {
     devLog('Tip: Press r to manually skip quiet window and rebuild immediately');
@@ -865,7 +876,7 @@ Environment Variables:
   let rebuilding = false;
   let pendingChanges = false;
   let pendingManifestChange = false;
-  let pendingChangedFiles = new Set(); // 追踪变化的文件，用于增量编译
+  const pendingChangedFiles = new Set(); // 追踪变化的文件，用于增量编译
   let quietDeadline = null;
   let lastLazyNoticeAt = 0;
   const relRepo = (p) => path.relative(repoRoot, p).replace(/\\/g, '/');
@@ -957,7 +968,7 @@ Environment Variables:
       if (targetRelSet && targetRelSet.size > 0) {
         devLog(`📦 Incremental build: ${Array.from(targetRelSet).join(', ')}`);
       } else {
-        devLog(`📦 Full rebuild: all entries`);
+        devLog('📦 Full rebuild: all entries');
       }
 
       await buildEntriesWithSpinner(targetRelSet);
@@ -1018,6 +1029,52 @@ Environment Variables:
       return;
     }
     planRebuildCheck(200);
+  };
+
+  let isManifestPackageReloading = false;
+  let pendingManifestPackageReload = false;
+  const rebuildManifestPackageOnly = async () => {
+    if (isManifestPackageReloading) {
+      pendingManifestPackageReload = true;
+      devLog('Manifest package reload already running, queued another request.');
+      return;
+    }
+
+    isManifestPackageReloading = true;
+    pendingManifestPackageReload = false;
+
+    try {
+      manifest = await fs.readJSON(manifestPath);
+      manifestVersion = String(manifest.version ?? '');
+      computeEntriesFromManifest();
+
+      const validation = validateCurrentManifest({ prefix: '[vite-dev]' });
+      if (!validation.valid) {
+        devError(
+          'Manifest validation failed; package-only reload skipped (serving last successful build).',
+        );
+        return;
+      }
+
+      const result = await rebuildDevPluginPackage();
+      if (!result?.ok) {
+        devError(
+          `Manifest package-only reload failed (${result?.reason || 'unknown reason'}).`,
+        );
+        return;
+      }
+
+      devLog(`Manifest package-only reload completed (pluginId: ${result.id}).`);
+    } catch (error) {
+      devError('Manifest package-only reload failed', error);
+    } finally {
+      isManifestPackageReloading = false;
+      if (pendingManifestPackageReload) {
+        setTimeout(() => {
+          void rebuildManifestPackageOnly();
+        }, 200);
+      }
+    }
   };
 
   try {
@@ -1347,9 +1404,12 @@ Environment Variables:
         scheduleRebuild({ reason: 'manual trigger', force: true });
       }
 
-      const isManifestRebuild = key === 'm' || key === 'M' || key === 'u' || key === 'U';
+      if (key === 'm' || key === 'M') {
+        console.log(i18n.t('vite.rebuild_manual_manifest'));
+        void rebuildManifestPackageOnly();
+      }
 
-      if (isManifestRebuild) {
+      if (key === 'u' || key === 'U') {
         console.log(i18n.t('vite.rebuild_manual_full'));
         scheduleRebuild({ reason: 'src/manifest.json', force: true });
       }
