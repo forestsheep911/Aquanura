@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* global fetch */
 const path = require('node:path');
+const { spawn } = require('node:child_process');
 const fs = require('fs-extra');
 const ora = require('ora');
 const chalk = require('chalk');
@@ -21,7 +22,6 @@ const {
   resolvePluginDistDir,
 } = require('../toolkit/runtime/paths');
 let createServer;
-let viteBuild;
 
 const repoRoot = findRepoRoot();
 loadEnv({ path: path.join(repoRoot, '.env') });
@@ -445,7 +445,7 @@ Environment Variables:
   }
 
   // Use ESM import to avoid Vite's deprecated CJS Node API warning.
-  ({ createServer, build: viteBuild } = await import('vite'));
+  ({ createServer } = await import('vite'));
   const reactPlugin = await createReactPlugin();
 
   const logLevel = process.env.VITE_LOG_LEVEL || (QUIET ? 'silent' : 'error');
@@ -515,6 +515,7 @@ Environment Variables:
     .filter(Boolean);
   const httpsConfig = certificateFor(extraDomains);
   const preferPort = Number(process.env.VITE_PORT || 3000);
+  let actualPort = preferPort;
 
   const manifestValidateMode = getManifestValidateMode();
   const pluginDir = path.dirname(manifestPath);
@@ -678,7 +679,7 @@ Environment Variables:
         if (seenEntryRel.has(normalizedRel)) continue;
         seenEntryRel.add(normalizedRel);
         const absPath = path.resolve(pluginRoot, 'src', normalizedRel);
-        const info = { type, rel: normalizedRel, absPath };
+        const info = { type, rel: normalizedRel, absPath, index: infos.length };
         infos.push(info);
         relToInfo.set(normalizedRel, info);
       }
@@ -736,15 +737,63 @@ Environment Variables:
     return { ok: true, id };
   };
 
-  const quietOnWarn = (warning, warn) => {
-    if (
-      warning &&
-      (warning.code === 'MODULE_LEVEL_DIRECTIVE' || warning.code === 'CHUNK_SIZE_LIMIT')
-    ) {
-      return;
-    }
-    warn(warning);
-  };
+  const buildWorkerPath = path.join(__dirname, 'build-worker.js');
+  const workerResultMarker = '[build-worker:result]';
+  let currentBuildChild = null;
+
+  const runBuildInWorker = (config) =>
+    new Promise((resolve, reject) => {
+      const child = spawn(
+        process.execPath,
+        ['--max-old-space-size=4096', buildWorkerPath, JSON.stringify(config)],
+        {
+          stdio: ['ignore', 'pipe', 'pipe'],
+          cwd: repoRoot,
+        },
+      );
+      currentBuildChild = child;
+
+      const stdoutChunks = [];
+      const stderrChunks = [];
+      if (child.stdout) {
+        child.stdout.on('data', (chunk) => stdoutChunks.push(Buffer.from(chunk)));
+      }
+      if (child.stderr) {
+        child.stderr.on('data', (chunk) => stderrChunks.push(Buffer.from(chunk)));
+      }
+
+      child.on('close', (code) => {
+        currentBuildChild = null;
+        if (code !== 0) {
+          const stderrOutput = Buffer.concat(stderrChunks).toString().trim();
+          if (stderrOutput) {
+            console.error(stderrOutput);
+          }
+          reject(new Error(`Build worker exited with code: ${code}`));
+          return;
+        }
+
+        try {
+          const stdoutOutput = Buffer.concat(stdoutChunks).toString('utf8');
+          const markerLine = stdoutOutput
+            .split(/\r?\n/)
+            .find((line) => line.startsWith(workerResultMarker));
+          if (!markerLine) {
+            resolve({ dependencies: [] });
+            return;
+          }
+          const payload = markerLine.slice(workerResultMarker.length);
+          resolve(JSON.parse(payload));
+        } catch (error) {
+          reject(new Error(`Failed to parse build worker output: ${error?.message || error}`));
+        }
+      });
+
+      child.on('error', (error) => {
+        currentBuildChild = null;
+        reject(error);
+      });
+    });
 
   const buildEntries = async (targetRelSet) => {
     const isFull =
@@ -754,64 +803,30 @@ Environment Variables:
       : entryInfos;
     if (!list.length) return;
 
-    for (let index = 0; index < list.length; index += 1) {
-      const info = list[index];
-      // Log to file only (not console) to keep spinner clean
+    for (const info of list) {
       devLog(`Building entry: ${info.rel}`);
+    }
 
-      // 使用 write: false 获取 bundle 信息用于依赖追踪
-      const result = await viteBuild({
-        root: pluginRoot,
-        plugins: [forceJsxPlugin, reactPlugin],
-        logLevel: 'silent',
-        esbuild: {
-          loader: 'jsx',
-          include: /\.js$/,
-          exclude: [],
-        },
-        define: {
-          __DEV_LOG_ENDPOINT__: JSON.stringify('/__devlog'),
-          __DEV_LIVE_ENDPOINT__: JSON.stringify('/__live'),
-          __PLUGIN_VERSION__: JSON.stringify(manifestVersion),
-          __DEV_LOCAL_LOG_ENABLED__: JSON.stringify(process.env.DEV_LOCAL_LOG_ENABLED !== 'false'),
-        },
-        build: {
-          outDir: tempOut,
-          emptyOutDir: isFull && index === 0,
-          write: false, // 先不写入，获取 bundle 信息
-          chunkSizeWarningLimit: 4096,
-          rollupOptions: {
-            input: info.absPath,
-            onwarn: quietOnWarn,
-            output: {
-              format: 'iife',
-              entryFileNames: 'js/[name].js',
-              assetFileNames: 'assets/[name][extname]',
-            },
-          },
-        },
-      });
+    const indicesToBuild = list.map((info) => info.index);
+    const workerResult = await runBuildInWorker({
+      pluginRoot,
+      tempOut,
+      entryInfos,
+      indicesToBuild,
+      emptyOutDir: isFull,
+      manifestVersion,
+      actualPort,
+      logLevel: 'error',
+      devLogLevel: process.env.DEV_LOG_LEVEL || 'trace',
+      localLogEnabled: process.env.DEV_LOCAL_LOG_ENABLED !== 'false',
+    });
 
-      // 从构建结果中提取依赖关系
-      const output = result?.output || [];
-      for (const chunk of output) {
-        if (chunk.type === 'chunk' && chunk.isEntry) {
-          // 获取该 chunk 依赖的所有模块
-          const modulePaths = Object.keys(chunk.modules || {});
-          updateDependencyGraph(info.rel, modulePaths);
-        }
-      }
-
-      // 手动写入构建产物到目标目录
-      for (const chunk of output) {
-        const outputPath = path.join(tempOut, chunk.fileName);
-        await fs.ensureDir(path.dirname(outputPath));
-        if (chunk.type === 'chunk') {
-          await fs.writeFile(outputPath, chunk.code);
-        } else if (chunk.type === 'asset') {
-          await fs.writeFile(outputPath, chunk.source);
-        }
-      }
+    const dependencyInfo = Array.isArray(workerResult?.dependencies)
+      ? workerResult.dependencies
+      : [];
+    for (const item of dependencyInfo) {
+      if (!item || typeof item.entryRel !== 'string' || !Array.isArray(item.modulePaths)) continue;
+      updateDependencyGraph(item.entryRel, item.modulePaths);
     }
   };
 
@@ -1200,7 +1215,6 @@ Environment Variables:
 
   await server.listen();
 
-  let actualPort = preferPort;
   try {
     const addr = server?.httpServer?.address?.();
     if (addr && typeof addr === 'object' && addr.port) {
@@ -1306,6 +1320,14 @@ Environment Variables:
 
   // cleanupAndExit: unified exit function
   const cleanupAndExit = (code = 0) => {
+    if (currentBuildChild) {
+      try {
+        currentBuildChild.kill();
+      } catch {
+        /* noop */
+      }
+      currentBuildChild = null;
+    }
     process.exit(code);
   };
 
